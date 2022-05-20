@@ -6,6 +6,8 @@ Releases can be found [here](https://github.com/CrystalFerrai/Ue4Export/releases
 
 This program is released standalone, meaning there is no installer. Simply extract the files to a directory to install it.
 
+You will need to install the [.NET 6.0 runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0) if you do not already have it.
+
 ## Usage
 
 You will first need to locate the paths to the specific assets you want to export. You can use a program like Unrealpak or Fmodel to help locate the assets. Create a text file with a list of all of the asset paths you want to export. For example:
