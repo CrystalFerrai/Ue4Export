@@ -1,0 +1,7 @@
+*.bat
+/.vs/**
+x64/**
+**/*.user
+/*/bin/**
+/*/obj/**
+**/Properties/launchSettings.json

@@ -1,0 +1,51 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31919.166
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Ue4Export", "Ue4Export\Ue4Export.csproj", "{20DF61F1-ACCC-4200-ABA4-B5F2A7967A31}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CUE4Parse", "CUE4Parse\CUE4Parse\CUE4Parse.csproj", "{704783F0-0348-4F91-945E-AC9CF03DAEFD}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CUE4Parse-Natives", "CUE4Parse\CUE4Parse-Natives\builddir\CUE4Parse-Natives.vcxproj", "{9E289AC9-9029-3B8D-B976-9115A298CCF8}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		MinSizeRel|x64 = MinSizeRel|x64
+		Release|x64 = Release|x64
+		RelWithDebInfo|x64 = RelWithDebInfo|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{20DF61F1-ACCC-4200-ABA4-B5F2A7967A31}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{20DF61F1-ACCC-4200-ABA4-B5F2A7967A31}.Debug|x64.Build.0 = Debug|Any CPU
+		{20DF61F1-ACCC-4200-ABA4-B5F2A7967A31}.MinSizeRel|x64.ActiveCfg = Debug|Any CPU
+		{20DF61F1-ACCC-4200-ABA4-B5F2A7967A31}.MinSizeRel|x64.Build.0 = Debug|Any CPU
+		{20DF61F1-ACCC-4200-ABA4-B5F2A7967A31}.Release|x64.ActiveCfg = Release|Any CPU
+		{20DF61F1-ACCC-4200-ABA4-B5F2A7967A31}.Release|x64.Build.0 = Release|Any CPU
+		{20DF61F1-ACCC-4200-ABA4-B5F2A7967A31}.RelWithDebInfo|x64.ActiveCfg = Release|Any CPU
+		{20DF61F1-ACCC-4200-ABA4-B5F2A7967A31}.RelWithDebInfo|x64.Build.0 = Release|Any CPU
+		{704783F0-0348-4F91-945E-AC9CF03DAEFD}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{704783F0-0348-4F91-945E-AC9CF03DAEFD}.Debug|x64.Build.0 = Debug|Any CPU
+		{704783F0-0348-4F91-945E-AC9CF03DAEFD}.MinSizeRel|x64.ActiveCfg = Debug|Any CPU
+		{704783F0-0348-4F91-945E-AC9CF03DAEFD}.MinSizeRel|x64.Build.0 = Debug|Any CPU
+		{704783F0-0348-4F91-945E-AC9CF03DAEFD}.Release|x64.ActiveCfg = Release|Any CPU
+		{704783F0-0348-4F91-945E-AC9CF03DAEFD}.Release|x64.Build.0 = Release|Any CPU
+		{704783F0-0348-4F91-945E-AC9CF03DAEFD}.RelWithDebInfo|x64.ActiveCfg = Release|Any CPU
+		{704783F0-0348-4F91-945E-AC9CF03DAEFD}.RelWithDebInfo|x64.Build.0 = Release|Any CPU
+		{9E289AC9-9029-3B8D-B976-9115A298CCF8}.Debug|x64.ActiveCfg = Debug|x64
+		{9E289AC9-9029-3B8D-B976-9115A298CCF8}.Debug|x64.Build.0 = Debug|x64
+		{9E289AC9-9029-3B8D-B976-9115A298CCF8}.MinSizeRel|x64.ActiveCfg = MinSizeRel|x64
+		{9E289AC9-9029-3B8D-B976-9115A298CCF8}.MinSizeRel|x64.Build.0 = MinSizeRel|x64
+		{9E289AC9-9029-3B8D-B976-9115A298CCF8}.Release|x64.ActiveCfg = Release|x64
+		{9E289AC9-9029-3B8D-B976-9115A298CCF8}.Release|x64.Build.0 = Release|x64
+		{9E289AC9-9029-3B8D-B976-9115A298CCF8}.RelWithDebInfo|x64.ActiveCfg = RelWithDebInfo|x64
+		{9E289AC9-9029-3B8D-B976-9115A298CCF8}.RelWithDebInfo|x64.Build.0 = RelWithDebInfo|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {BDDD9C6E-120B-4A46-847C-CB71F356A017}
+	EndGlobalSection
+EndGlobal
