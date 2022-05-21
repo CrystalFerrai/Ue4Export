@@ -20,23 +20,23 @@ using Newtonsoft.Json;
 
 namespace Ue4Export
 {
+	/// <summary>
+	/// Exports Ue4 assets to files
+	/// </summary>
 	internal class Exporter
 	{
 		private readonly string mGameDir;
 		private readonly string mOutDir;
 
-		private readonly TextWriter mInfoOut;
-		private readonly TextWriter mErrorOut;
+		private readonly Logger? mLogger;
 
 		private readonly JsonSerializerSettings mJsonSettings;
 
-		public Exporter(string gameDir, string outDir, TextWriter infoOut, TextWriter errorOut)
+		public Exporter(string gameDir, string outDir, Logger? logger)
 		{
 			mGameDir = gameDir;
 			mOutDir = outDir;
-
-			mInfoOut = infoOut;
-			mErrorOut = errorOut;
+			mLogger = logger;
 
 			mJsonSettings = new JsonSerializerSettings()
 			{
@@ -60,7 +60,8 @@ namespace Ue4Export
 				provider.LoadMappings();
 				provider.LoadLocalization(ELanguage.English);
 
-				ExportFormat format = ExportFormat.Json;
+				ExportFormats formats = ExportFormats.Json;
+				mLogger?.Log(LogLevel.Important, "Export format is now [Json]");
 
 				foreach (string line in File.ReadAllLines(assetListPath))
 				{
@@ -71,23 +72,44 @@ namespace Ue4Export
 
 					if (trimmed.StartsWith('['))
 					{
-						if (trimmed.Equals("[Json]", StringComparison.InvariantCultureIgnoreCase))
+						if (!trimmed.EndsWith(']'))
 						{
-							format = ExportFormat.Json;
-						}
-						else if (trimmed.Equals("[Raw]", StringComparison.InvariantCultureIgnoreCase))
-						{
-							format = ExportFormat.Raw;
-						}
-						else
-						{
-							mErrorOut.WriteLine($"Unrecognized header {trimmed}");
+							mLogger?.Log(LogLevel.Error, $"{trimmed} - Lines beginning with '[' must end with ']'.");
 							return false;
 						}
+
+						if (trimmed.Length < 3)
+						{
+							mLogger?.Log(LogLevel.Error, "[] - Invalid header");
+							return false;
+						}
+
+						formats = ExportFormats.None;
+
+						string[] headers = trimmed[1..^1].Split(',');
+						foreach (string h in headers)
+						{
+							string header = h.Trim().ToLowerInvariant();
+							switch (header)
+							{
+								case "json":
+									formats |= ExportFormats.Json;
+									break;
+								case "raw":
+									formats |= ExportFormats.Raw;
+									break;
+								default:
+									mLogger?.Log(LogLevel.Error, $"Unrecognized header {trimmed}");
+									return false;
+							}
+						}
+
+						mLogger?.Log(LogLevel.Important, $"Export format is now [{formats.ToString().Replace(" |", ",")}]");
+
 						continue;
 					}
 
-					if (!ExportAsset(provider, format, trimmed))
+					if (!ExportAsset(provider, formats, trimmed))
 					{
 						success = false;
 					}
@@ -97,53 +119,48 @@ namespace Ue4Export
 			return success;
 		}
 
-		private bool ExportAsset(AbstractVfsFileProvider provider, ExportFormat format, string assetPath)
+		private bool ExportAsset(AbstractVfsFileProvider provider, ExportFormats formats, string assetPath)
 		{
-			mInfoOut.WriteLine($"Exporting {format}: {assetPath}...");
+			mLogger?.Log(LogLevel.Information, $"Exporting {assetPath}...");
 
 			try
 			{
 				var exports = provider.LoadObjectExports(assetPath);
 
-				switch (format)
+				if ((formats & ExportFormats.Raw) != 0)
 				{
-					case ExportFormat.Raw:
-						{
-							var raw = provider.SavePackage(assetPath);
-							foreach (var pair in raw)
-							{
-								string outPath = Path.Combine(mOutDir, pair.Key);
-								Directory.CreateDirectory(Path.GetDirectoryName(outPath)!);
-								File.WriteAllBytes(outPath, pair.Value);
-							}
+					var raw = provider.SavePackage(assetPath);
+					foreach (var pair in raw)
+					{
+						string outPath = Path.Combine(mOutDir, pair.Key);
+						Directory.CreateDirectory(Path.GetDirectoryName(outPath)!);
+						File.WriteAllBytes(outPath, pair.Value);
+					}
+				}
+				if ((formats & ExportFormats.Json) != 0)
+				{
+					string json = JsonConvert.SerializeObject(exports, mJsonSettings);
 
-							break;
-						}
-					case ExportFormat.Json:
-						{
-							string json = JsonConvert.SerializeObject(exports, mJsonSettings);
-
-							string outPath = Path.Combine(mOutDir, $"{assetPath}.json");
-							Directory.CreateDirectory(Path.GetDirectoryName(outPath)!);
-							File.WriteAllText(outPath, json);
-
-							break;
-						}
+					string outPath = Path.Combine(mOutDir, $"{assetPath}.json");
+					Directory.CreateDirectory(Path.GetDirectoryName(outPath)!);
+					File.WriteAllText(outPath, json);
 				}
 			}
 			catch (Exception ex)
 			{
-				mErrorOut.WriteLine($"  ERROR: Asset export failed! [{ex.GetType().FullName}] {ex.Message}");
+				mLogger?.Log(LogLevel.Warning, $"Export of asset {assetPath} failed! [{ex.GetType().FullName}] {ex.Message}");
 				return false;
 			}
 
 			return true;
 		}
 
-		private enum ExportFormat
+		[Flags]
+		private enum ExportFormats
 		{
-			Raw,
-			Json
+			None = 0x00,
+			Raw = 0x01,
+			Json = 0x02
 		}
 	}
 }

@@ -24,17 +24,19 @@ namespace Ue4Export
 				return 0;
 			}
 
+			ConsoleLogger logger = new();
+
 			string gameDir = args[0];
 			if (!Directory.Exists(gameDir))
 			{
-				Console.Error.WriteLine($"Could not access game directory \"{gameDir}\"");
+				logger.Log(LogLevel.Fatal, $"Could not access game directory \"{gameDir}\"");
 				return 1;
 			}
 
 			string assetListPath = args[1];
 			if (!File.Exists(assetListPath))
 			{
-				Console.Error.WriteLine($"Could not access asset list \"{assetListPath}\"");
+				logger.Log(LogLevel.Fatal, $"Could not access asset list \"{assetListPath}\"");
 				return 1;
 			}
 
@@ -45,16 +47,29 @@ namespace Ue4Export
 			}
 			catch (Exception ex)
 			{
-				Console.Error.WriteLine($"Could not access/create output directory \"{outDir}\". {ex.GetType().FullName}: {ex.Message}");
+				logger.Log(LogLevel.Fatal, $"Could not access/create output directory \"{outDir}\". [{ex.GetType().FullName}] {ex.Message}");
 				return 1;
 			}
 
-			DeleteDirectoryContents(outDir);
+			try
+			{
+				DeleteDirectoryContents(outDir);
+			}
+			catch (Exception ex)
+			{
+				logger.Log(LogLevel.Fatal, $"Could not clear output directory \"{outDir}\". [{ex.GetType().FullName}] {ex.Message}");
+				return 1;
+			}
 
-			Exporter exporter = new Exporter(gameDir, outDir, Console.Out, Console.Error);
+			Exporter exporter = new Exporter(gameDir, outDir, logger);
 			bool success = exporter.Export(assetListPath);
 
-			Console.Out.WriteLine("Done.");
+			logger.Log(LogLevel.Important, "Exports complete.");
+
+			if (!success)
+			{
+				logger.Log(LogLevel.Warning, "One or more assets failed to export.");
+			}
 
 			// Pause if debugger attached
 			if (System.Diagnostics.Debugger.IsAttached) Console.ReadKey();
