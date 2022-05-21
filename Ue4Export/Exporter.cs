@@ -109,7 +109,7 @@ namespace Ue4Export
 						continue;
 					}
 
-					if (!ExportAsset(provider, formats, trimmed))
+					if (!SearchAndExportAssets(provider, formats, trimmed))
 					{
 						success = false;
 					}
@@ -117,6 +117,32 @@ namespace Ue4Export
 			}
 
 			return success;
+		}
+
+		private bool SearchAndExportAssets(AbstractVfsFileProvider provider, ExportFormats formats, string searchPattern)
+		{
+			// If there are any wildcards in the path, find all matching assets and export them. Otherwise, just attempt to export it as a single asset.
+			if (searchPattern.Any(c => c == '?' || c == '*'))
+			{
+				var assetPaths = PathSearch.Filter(provider.Files.Keys.Select(p => p[..p.LastIndexOf('.')]), searchPattern);
+
+				if (!assetPaths.Any())
+				{
+					mLogger?.Log(LogLevel.Warning, $"Could not find any asset matching the path {searchPattern}");
+					return false;
+				}
+
+				bool success = true;
+				foreach (var assetPath in assetPaths)
+				{
+					success &= ExportAsset(provider, formats, assetPath);
+				}
+				return success;
+			}
+			else
+			{
+				return ExportAsset(provider, formats, searchPattern);
+			}
 		}
 
 		private bool ExportAsset(AbstractVfsFileProvider provider, ExportFormats formats, string assetPath)

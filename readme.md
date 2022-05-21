@@ -10,7 +10,11 @@ You will need to install the [.NET 6.0 runtime](https://dotnet.microsoft.com/en-
 
 ## Usage
 
-You will first need to locate the paths to the specific assets you want to export. You can use a program like Unrealpak or Fmodel to help locate the assets. Create a text file with a list of all of the asset paths you want to export. For example:
+You will first need to locate the paths to the specific assets you want to export. You can use a program like Unrealpak or Fmodel to help locate the assets.
+
+### Asset List
+
+Create a text file with a list of all of the asset paths you want to export. Here is a simple example.
 
 **assetlist.txt**
 ```
@@ -18,20 +22,27 @@ MyGame/Content/Maps/Map1/Map1
 MyGame/Content/BP/SomeSystem/SomeBP
 ```
 
-By default, assets are exported as Json. You can choose to export raw assets (.uasset files) instead by placing a `[Raw]` header above a list of assets. You can switch back to Json using a `[Json]` header or export as both using `[Raw,Json]`. You can also leave comments by starting a line with `#`. Here is an example asset list showing these options.
+By default, assets are exported as Json. You can choose to export raw assets (.uasset files) instead by placing a `[Raw]` header above a list of assets. You can switch back to Json using a `[Json]` header or export as both using `[Raw,Json]`. You can also leave comments by starting a line with `#`.
 
+Asset paths in the asset list file also have basic wildcard support. A `?` can represent any single character in the path and a `*` can represent 0 or more characters.
+
+Here is a more complex asset list example.
+
+**assetlist.txt**
 ```
 [Raw]
-MyGame/Content/Maps/Map1/Map1
+# Export all assets within a directory (including subdirectories)
+MyGame/Content/Maps/Map1/*
 
-# Some comment
 [Json]
 MyGame/Content/BP/SomeSystem/SomeBP
 
-# Export these as Raw and Json
+# Export the following assets as both Raw and Json
 [Raw,Json]
 MyGame/Content/UI/Component/MyButton
 ```
+
+### Batch Script
 
 Next, create a batch script to run the program, placing it next to Ue4Export.exe. Here is an example:
 
