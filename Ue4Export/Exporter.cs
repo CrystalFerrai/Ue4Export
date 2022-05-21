@@ -46,48 +46,51 @@ namespace Ue4Export
 
 		public bool Export(string assetListPath)
 		{
-			var provider = new DefaultFileProvider(mGameDir, SearchOption.TopDirectoryOnly);
-			provider.Initialize();
-
-			foreach (var vfsReader in provider.UnloadedVfs)
-			{
-				provider.SubmitKey(vfsReader.EncryptionKeyGuid, new FAesKey(new byte[32]));
-			}
-
-			provider.LoadMappings();
-			provider.LoadLocalization(ELanguage.English);
-
 			bool success = true;
-			ExportFormat format = ExportFormat.Json;
 
-			foreach (string line in File.ReadAllLines(assetListPath))
+			using (var provider = new DefaultFileProvider(mGameDir, SearchOption.TopDirectoryOnly))
 			{
-				if (string.IsNullOrWhiteSpace(line)) continue;
+				provider.Initialize();
 
-				string trimmed = line.Trim();
-				if (trimmed.StartsWith('#')) continue;
-
-				if (trimmed.StartsWith('['))
+				foreach (var vfsReader in provider.UnloadedVfs)
 				{
-					if (trimmed.Equals("[Json]", StringComparison.InvariantCultureIgnoreCase))
-					{
-						format = ExportFormat.Json;
-					}
-					else if (trimmed.Equals("[Raw]", StringComparison.InvariantCultureIgnoreCase))
-					{
-						format = ExportFormat.Raw;
-					}
-					else
-					{
-						mErrorOut.WriteLine($"Unrecognized header {trimmed}");
-						return false;
-					}
-					continue;
+					provider.SubmitKey(vfsReader.EncryptionKeyGuid, new FAesKey(new byte[32]));
 				}
 
-				if (!ExportAsset(provider, format, trimmed))
+				provider.LoadMappings();
+				provider.LoadLocalization(ELanguage.English);
+
+				ExportFormat format = ExportFormat.Json;
+
+				foreach (string line in File.ReadAllLines(assetListPath))
 				{
-					success = false;
+					if (string.IsNullOrWhiteSpace(line)) continue;
+
+					string trimmed = line.Trim();
+					if (trimmed.StartsWith('#')) continue;
+
+					if (trimmed.StartsWith('['))
+					{
+						if (trimmed.Equals("[Json]", StringComparison.InvariantCultureIgnoreCase))
+						{
+							format = ExportFormat.Json;
+						}
+						else if (trimmed.Equals("[Raw]", StringComparison.InvariantCultureIgnoreCase))
+						{
+							format = ExportFormat.Raw;
+						}
+						else
+						{
+							mErrorOut.WriteLine($"Unrecognized header {trimmed}");
+							return false;
+						}
+						continue;
+					}
+
+					if (!ExportAsset(provider, format, trimmed))
+					{
+						success = false;
+					}
 				}
 			}
 
