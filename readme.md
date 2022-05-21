@@ -18,11 +18,22 @@ MyGame/Content/Maps/Map1/Map1
 MyGame/Content/BP/SomeSystem/SomeBP
 ```
 
+By default, assets are exported as Json. You can also choose the export raw assets (.uasset files) by placing a `[Raw]` header above a list of assets. You can switch back to Json using a `[Json]` header. You can also leave comments by starting a line with `#`. Here is an example asset list showing these options.
+
+```
+[Raw]
+MyGame/Content/Maps/Map1/Map1
+
+# Some comment
+[Json]
+MyGame/Content/BP/SomeSystem/SomeBP
+```
+
 Next, create a batch script to run the program, placing it next to Ue4Export.exe. Here is an example:
 
 **RunUe4Export.bat**
 ```
-@Ue4Export "C:\Games\MyGame\Content/Paks" "assetlist.txt" "C:\Output"
+@Ue4Export "C:\Games\MyGame\Content\Paks" "assetlist.txt" "C:\Output"
 ```
 
 The first parameter is the directory containing the pak files for your game. The second is the list of assets you created for exporting. The third is a directory in which to output the Json files for the assets.
