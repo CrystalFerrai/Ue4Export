@@ -32,12 +32,25 @@ namespace Ue4Export
 	/// </summary>
 	internal class Exporter
 	{
+		private static readonly HashSet<string> sExtensionsToIgnore;
+
 		private readonly string mGameDir;
 		private readonly string mOutDir;
 
 		private readonly Logger? mLogger;
 
 		private readonly JsonSerializerSettings mJsonSettings;
+
+		static Exporter()
+		{
+			// When exporting with wildcards, filter out uexp/ubulk files because they are not a valid export target and are always
+			// paired with something that is valid like a uasset/umap
+			sExtensionsToIgnore = new HashSet<string>()
+			{
+				".uexp",
+				".ubulk"
+			};
+		}
 
 		public Exporter(string gameDir, string outDir, Logger? logger)
 		{
@@ -131,7 +144,7 @@ namespace Ue4Export
 			// If there are any wildcards in the path, find all matching assets and export them. Otherwise, just attempt to export it as a single asset.
 			if (searchPattern.Any(c => c == '?' || c == '*'))
 			{
-				var assetPaths = PathSearch.Filter(provider.Files.Keys, searchPattern);
+				var assetPaths = PathSearch.Filter(provider.Files.Keys, searchPattern).Where(p => !sExtensionsToIgnore.Contains(Path.GetExtension(p)));
 
 				if (!assetPaths.Any())
 				{
@@ -220,7 +233,7 @@ namespace Ue4Export
 				case "archive":
 				case "manifest":
 				case "wem":
-					return Encoding.UTF8.GetString(provider.SaveAsset(assetPath));
+					return Encoding.UTF8.GetString(provider.Files[assetPath].Read());
 				case "locmeta":
 					return ReadObject<FTextLocalizationMetaDataResource>(provider, assetPath);
 				case "locres":
