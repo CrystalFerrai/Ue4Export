@@ -15,8 +15,15 @@
 using CUE4Parse.Encryption.Aes;
 using CUE4Parse.FileProvider;
 using CUE4Parse.FileProvider.Vfs;
+using CUE4Parse.UE4.AssetRegistry;
+using CUE4Parse.UE4.Localization;
+using CUE4Parse.UE4.Oodle.Objects;
+using CUE4Parse.UE4.Readers;
+using CUE4Parse.UE4.Shaders;
 using CUE4Parse.UE4.Versions;
+using CUE4Parse.UE4.Wwise;
 using Newtonsoft.Json;
+using System.Text;
 
 namespace Ue4Export
 {
@@ -124,7 +131,7 @@ namespace Ue4Export
 			// If there are any wildcards in the path, find all matching assets and export them. Otherwise, just attempt to export it as a single asset.
 			if (searchPattern.Any(c => c == '?' || c == '*'))
 			{
-				var assetPaths = PathSearch.Filter(provider.Files.Keys.Select(p => p[..p.LastIndexOf('.')]), searchPattern);
+				var assetPaths = PathSearch.Filter(provider.Files.Keys, searchPattern);
 
 				if (!assetPaths.Any())
 				{
@@ -151,11 +158,10 @@ namespace Ue4Export
 
 			try
 			{
-				var exports = provider.LoadObjectExports(assetPath);
-
 				if ((formats & ExportFormats.Raw) != 0)
 				{
-					var raw = provider.SavePackage(assetPath);
+					// Need to trim off the file extension or the package won't be found
+					var raw = provider.SavePackage(assetPath[..assetPath.LastIndexOf('.')]);
 					foreach (var pair in raw)
 					{
 						string outPath = Path.Combine(mOutDir, pair.Key);
@@ -165,7 +171,8 @@ namespace Ue4Export
 				}
 				if ((formats & ExportFormats.Json) != 0)
 				{
-					string json = JsonConvert.SerializeObject(exports, mJsonSettings);
+					string? json = LoadJson(provider, assetPath);
+					if (json == null) return false;
 
 					string outPath = Path.Combine(mOutDir, $"{assetPath}.json");
 					Directory.CreateDirectory(Path.GetDirectoryName(outPath)!);
@@ -179,6 +186,73 @@ namespace Ue4Export
 			}
 
 			return true;
+		}
+
+		private string? LoadJson(AbstractVfsFileProvider provider, string assetPath)
+		{
+			string ext = Path.GetExtension(assetPath)[1..];
+
+			switch (ext)
+			{
+				case "uasset":
+				case "umap":
+					{
+						var exports = provider.LoadObjectExports(assetPath);
+						return JsonConvert.SerializeObject(exports, mJsonSettings);
+					}
+				case "ini":
+				case "txt":
+				case "log":
+				case "po":
+				case "bat":
+				case "dat":
+				case "cfg":
+				case "ide":
+				case "ipl":
+				case "zon":
+				case "xml":
+				case "h":
+				case "uproject":
+				case "uplugin":
+				case "upluginmanifest":
+				case "csv":
+				case "json":
+				case "archive":
+				case "manifest":
+				case "wem":
+					return Encoding.UTF8.GetString(provider.SaveAsset(assetPath));
+				case "locmeta":
+					return ReadObject<FTextLocalizationMetaDataResource>(provider, assetPath);
+				case "locres":
+					return ReadObject<FTextLocalizationResource>(provider, assetPath);
+				case "bin" when assetPath.Contains("AssetRegistry"):
+					return ReadObject<FAssetRegistryState>(provider, assetPath);
+				case "bnk":
+				case "pck":
+					return ReadObject<WwiseReader>(provider, assetPath);
+				case "udic":
+					return ReadObject<FOodleDictionaryArchive>(provider, assetPath);
+				case "ushaderbytecode":
+				case "ushadercode":
+					return ReadObject<FShaderCodeArchive>(provider, assetPath);
+				case "png":
+				case "jpg":
+				case "bmp":
+				case "svg":
+				case "ufont":
+				case "otf":
+				case "ttf":
+				default:
+					mLogger?.Log(LogLevel.Warning, $"{assetPath} - This asset cannot be converted to Json.");
+					return null;
+			}
+		}
+
+		private string ReadObject<T>(AbstractVfsFileProvider provider, string assetPath)
+		{
+			using FArchive archive = provider.CreateReader(assetPath);
+			object obj = Activator.CreateInstance(typeof(T), archive)!;
+			return JsonConvert.SerializeObject(obj, mJsonSettings);
 		}
 
 		[Flags]
