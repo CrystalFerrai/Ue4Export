@@ -187,7 +187,7 @@ namespace Ue4Export
 					string? json = LoadJson(provider, assetPath);
 					if (json == null) return false;
 
-					string outPath = Path.Combine(mOutDir, $"{assetPath}.json");
+					string outPath = Path.Combine(mOutDir, Path.ChangeExtension(assetPath, ".json"));
 					Directory.CreateDirectory(Path.GetDirectoryName(outPath)!);
 					File.WriteAllText(outPath, json);
 				}
