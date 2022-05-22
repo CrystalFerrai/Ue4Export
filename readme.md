@@ -64,7 +64,7 @@ The first parameter is the directory containing the pak files for your game. The
 Now run your batch script and wait for it to finish. If there were no errors, you should find the output files in the specified output directory.
 
 ## Building
-Clone the depot, including submodules.
+Clone the repo, including submodules.
 ```
 git clone --recursive https://github.com/CrystalFerrai/Ue4Export.git
 ```
