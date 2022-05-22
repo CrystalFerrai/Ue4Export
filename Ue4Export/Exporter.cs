@@ -85,7 +85,7 @@ namespace Ue4Export
 				provider.LoadLocalization(ELanguage.English);
 
 				ExportFormats formats = ExportFormats.Text;
-				mLogger?.Log(LogLevel.Important, "Export format is now [Json]");
+				mLogger?.Log(LogLevel.Important, "Export format is now [Text]");
 
 				foreach (string line in File.ReadAllLines(assetListPath))
 				{
