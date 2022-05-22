@@ -1,4 +1,5 @@
 *.bat
+package/**
 /.vs/**
 x64/**
 **/*.user
