@@ -84,7 +84,7 @@ namespace Ue4Export
 				provider.LoadMappings(); // Does nothing unless the game is Fortnite (in which case it tries to download type mappings from the web)
 				provider.LoadLocalization(ELanguage.English);
 
-				ExportFormats formats = ExportFormats.Json;
+				ExportFormats formats = ExportFormats.Text;
 				mLogger?.Log(LogLevel.Important, "Export format is now [Json]");
 
 				foreach (string line in File.ReadAllLines(assetListPath))
@@ -135,8 +135,8 @@ namespace Ue4Export
 				string header = h.Trim().ToLowerInvariant();
 				switch (header)
 				{
-					case "json":
-						formats |= ExportFormats.Json;
+					case "text":
+						formats |= ExportFormats.Text;
 						break;
 					case "raw":
 						formats |= ExportFormats.Raw;
@@ -144,6 +144,9 @@ namespace Ue4Export
 					case "texture":
 						formats |= ExportFormats.Texture;
 						break;
+					case "json":
+						mLogger?.Log(LogLevel.Warning, "Export format [Json] is deprecated. Please use [Text] to get Json output.");
+						goto case "text";
 					default:
 						mLogger?.Log(LogLevel.Error, $"Unrecognized export format {input}");
 						return ExportFormats.None;
@@ -190,9 +193,9 @@ namespace Ue4Export
 					SaveRaw(provider, assetPath);
 					return true;
 				}
-				if ((formats & ExportFormats.Json) != 0)
+				if ((formats & ExportFormats.Text) != 0)
 				{
-					return SaveJson(provider, assetPath, isBulk);
+					return SaveText(provider, assetPath, isBulk);
 				}
 				if ((formats & ExportFormats.Texture) != 0)
 				{
@@ -209,22 +212,73 @@ namespace Ue4Export
 
 		private void SaveRaw(AbstractVfsFileProvider provider, string assetPath)
 		{
-			// Need to trim off the file extension or the package won't be found
-			int extPos = assetPath.LastIndexOf('.');
-			if (extPos < 1) extPos = assetPath.Length;
-			var raw = provider.SavePackage(assetPath[..extPos]);
-			foreach (var pair in raw)
+			string ext = GetTrimmedExtension(assetPath);
+
+			switch (ext)
 			{
-				string outPath = Path.Combine(mOutDir, pair.Key);
-				Directory.CreateDirectory(Path.GetDirectoryName(outPath)!);
-				File.WriteAllBytes(outPath, pair.Value);
+				case "bin":
+				case "ini":
+				case "txt":
+				case "log":
+				case "po":
+				case "bat":
+				case "dat":
+				case "cfg":
+				case "ide":
+				case "ipl":
+				case "zon":
+				case "xml":
+				case "h":
+				case "uproject":
+				case "uplugin":
+				case "upluginmanifest":
+				case "csv":
+				case "json":
+				case "archive":
+				case "manifest":
+				case "png":
+				case "jpg":
+				case "bmp":
+				case "svg":
+				case "ufont":
+				case "otf":
+				case "ttf":
+				case "wem":
+					{
+						byte[] data = provider.Files[assetPath].Read();
+
+						string outPath = Path.Combine(mOutDir, assetPath);
+						Directory.CreateDirectory(Path.GetDirectoryName(outPath)!);
+						File.WriteAllBytes(outPath, data);
+
+						break;
+					}
+				default:
+					{
+						// This cases catches the most common types like uasset, umap, etc.
+
+						// Need to trim off the file extension or the package won't be found
+						int extPos = assetPath.LastIndexOf('.');
+						if (extPos < 1) extPos = assetPath.Length;
+
+						var raw = provider.SavePackage(assetPath[..extPos]);
+						foreach (var pair in raw)
+						{
+							string outPath = Path.Combine(mOutDir, pair.Key);
+							Directory.CreateDirectory(Path.GetDirectoryName(outPath)!);
+							File.WriteAllBytes(outPath, pair.Value);
+						}
+
+						break;
+					}
 			}
 		}
 
-		private bool SaveJson(AbstractVfsFileProvider provider, string assetPath, bool isBulk = false)
+		private bool SaveText(AbstractVfsFileProvider provider, string assetPath, bool isBulk = false)
 		{
 			string ext = GetTrimmedExtension(assetPath);
-			string? json = null;
+			string? text = null;
+			bool changeExtenstionToJson = true;
 
 			switch (ext)
 			{
@@ -233,7 +287,7 @@ namespace Ue4Export
 				case "umap":
 					{
 						var exports = provider.LoadObjectExports(assetPath);
-						json = JsonConvert.SerializeObject(exports, mJsonSettings);
+						text = JsonConvert.SerializeObject(exports, mJsonSettings);
 						break;
 					}
 				case "ini":
@@ -255,28 +309,28 @@ namespace Ue4Export
 				case "json":
 				case "archive":
 				case "manifest":
-				case "wem":
-					json = Encoding.UTF8.GetString(provider.Files[assetPath].Read());
+					text = Encoding.UTF8.GetString(provider.Files[assetPath].Read());
+					changeExtenstionToJson = false;
 					break;
 				case "locmeta":
-					json = SerializeObject<FTextLocalizationMetaDataResource>(provider, assetPath);
+					text = SerializeObject<FTextLocalizationMetaDataResource>(provider, assetPath);
 					break;
 				case "locres":
-					json = SerializeObject<FTextLocalizationResource>(provider, assetPath);
+					text = SerializeObject<FTextLocalizationResource>(provider, assetPath);
 					break;
 				case "bin" when assetPath.Contains("AssetRegistry"):
-					json = SerializeObject<FAssetRegistryState>(provider, assetPath);
+					text = SerializeObject<FAssetRegistryState>(provider, assetPath);
 					break;
 				case "bnk":
 				case "pck":
-					json = SerializeObject<WwiseReader>(provider, assetPath);
+					text = SerializeObject<WwiseReader>(provider, assetPath);
 					break;
 				case "udic":
-					json = SerializeObject<FOodleDictionaryArchive>(provider, assetPath);
+					text = SerializeObject<FOodleDictionaryArchive>(provider, assetPath);
 					break;
 				case "ushaderbytecode":
 				case "ushadercode":
-					json = SerializeObject<FShaderCodeArchive>(provider, assetPath);
+					text = SerializeObject<FShaderCodeArchive>(provider, assetPath);
 					break;
 				case "png":
 				case "jpg":
@@ -285,14 +339,24 @@ namespace Ue4Export
 				case "ufont":
 				case "otf":
 				case "ttf":
+				case "wem":
 				default:
-					if (!isBulk) mLogger?.Log(LogLevel.Warning, $"{assetPath} - This asset cannot be converted to Json.");
+					if (!isBulk) mLogger?.Log(LogLevel.Warning, $"{assetPath} - This asset cannot be converted to Text.");
 					return isBulk;
 			}
 
-			string outPath = Path.Combine(mOutDir, Path.ChangeExtension(assetPath, ".json"));
+			string outPath;
+			if (changeExtenstionToJson)
+			{
+				outPath = Path.Combine(mOutDir, Path.ChangeExtension(assetPath, ".json"));
+			}
+			else
+			{
+				outPath = Path.Combine(mOutDir, assetPath);
+			}
+
 			Directory.CreateDirectory(Path.GetDirectoryName(outPath)!);
-			File.WriteAllText(outPath, json);
+			File.WriteAllText(outPath, text);
 
 			return true;
 		}
@@ -426,7 +490,7 @@ namespace Ue4Export
 		{
 			None = 0x00,
 			Raw = 0x01,
-			Json = 0x02,
+			Text = 0x02,
 			Texture = 0x04
 		}
 	}

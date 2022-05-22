@@ -64,12 +64,12 @@ namespace Ue4Export
 			Exporter exporter = new Exporter(gameDir, outDir, logger);
 			bool success = exporter.Export(assetListPath);
 
-			logger.Log(LogLevel.Important, "\nExports complete.");
-
 			if (!success)
 			{
 				logger.Log(LogLevel.Warning, "One or more assets failed to export.");
 			}
+
+			logger.Log(LogLevel.Important, "\nExports complete.");
 
 			// Pause if debugger attached
 			if (System.Diagnostics.Debugger.IsAttached) Console.ReadKey();
