@@ -16,13 +16,17 @@ using CUE4Parse.Encryption.Aes;
 using CUE4Parse.FileProvider;
 using CUE4Parse.FileProvider.Vfs;
 using CUE4Parse.UE4.AssetRegistry;
+using CUE4Parse.UE4.Assets.Exports;
+using CUE4Parse.UE4.Assets.Exports.Texture;
 using CUE4Parse.UE4.Localization;
 using CUE4Parse.UE4.Oodle.Objects;
 using CUE4Parse.UE4.Readers;
 using CUE4Parse.UE4.Shaders;
 using CUE4Parse.UE4.Versions;
 using CUE4Parse.UE4.Wwise;
+using CUE4Parse_Conversion.Textures;
 using Newtonsoft.Json;
+using SkiaSharp;
 using System.Text;
 
 namespace Ue4Export
@@ -77,7 +81,7 @@ namespace Ue4Export
 					provider.SubmitKey(vfsReader.EncryptionKeyGuid, new FAesKey(new byte[32]));
 				}
 
-				provider.LoadMappings();
+				provider.LoadMappings(); // Does nothing unless the game is Fortnite (in which case it tries to download type mappings from the web)
 				provider.LoadLocalization(ELanguage.English);
 
 				ExportFormats formats = ExportFormats.Json;
@@ -104,32 +108,14 @@ namespace Ue4Export
 							return false;
 						}
 
-						formats = ExportFormats.None;
-
-						string[] headers = trimmed[1..^1].Split(',');
-						foreach (string h in headers)
-						{
-							string header = h.Trim().ToLowerInvariant();
-							switch (header)
-							{
-								case "json":
-									formats |= ExportFormats.Json;
-									break;
-								case "raw":
-									formats |= ExportFormats.Raw;
-									break;
-								default:
-									mLogger?.Log(LogLevel.Error, $"Unrecognized header {trimmed}");
-									return false;
-							}
-						}
+						formats = ParseFormats(trimmed[1..^1]);
 
 						mLogger?.Log(LogLevel.Important, $"Export format is now [{formats.ToString().Replace(" |", ",")}]");
 
 						continue;
 					}
 
-					if (!SearchAndExportAssets(provider, formats, trimmed))
+					if (!FindAndExportAssets(provider, formats, trimmed))
 					{
 						success = false;
 					}
@@ -139,7 +125,35 @@ namespace Ue4Export
 			return success;
 		}
 
-		private bool SearchAndExportAssets(AbstractVfsFileProvider provider, ExportFormats formats, string searchPattern)
+		private ExportFormats ParseFormats(string input)
+		{
+			ExportFormats formats = ExportFormats.None;
+
+			string[] headers = input.Split(',');
+			foreach (string h in headers)
+			{
+				string header = h.Trim().ToLowerInvariant();
+				switch (header)
+				{
+					case "json":
+						formats |= ExportFormats.Json;
+						break;
+					case "raw":
+						formats |= ExportFormats.Raw;
+						break;
+					case "texture":
+						formats |= ExportFormats.Texture;
+						break;
+					default:
+						mLogger?.Log(LogLevel.Error, $"Unrecognized export format {input}");
+						return ExportFormats.None;
+				}
+			}
+
+			return formats;
+		}
+
+		private bool FindAndExportAssets(AbstractVfsFileProvider provider, ExportFormats formats, string searchPattern)
 		{
 			// If there are any wildcards in the path, find all matching assets and export them. Otherwise, just attempt to export it as a single asset.
 			if (searchPattern.Any(c => c == '?' || c == '*'))
@@ -155,7 +169,7 @@ namespace Ue4Export
 				bool success = true;
 				foreach (var assetPath in assetPaths)
 				{
-					success &= ExportAsset(provider, formats, assetPath);
+					success &= ExportAsset(provider, formats, assetPath, true);
 				}
 				return success;
 			}
@@ -165,7 +179,7 @@ namespace Ue4Export
 			}
 		}
 
-		private bool ExportAsset(AbstractVfsFileProvider provider, ExportFormats formats, string assetPath)
+		private bool ExportAsset(AbstractVfsFileProvider provider, ExportFormats formats, string assetPath, bool isBulk = false)
 		{
 			mLogger?.Log(LogLevel.Information, $"Exporting {assetPath}...");
 
@@ -173,45 +187,54 @@ namespace Ue4Export
 			{
 				if ((formats & ExportFormats.Raw) != 0)
 				{
-					// Need to trim off the file extension or the package won't be found
-					var raw = provider.SavePackage(assetPath[..assetPath.LastIndexOf('.')]);
-					foreach (var pair in raw)
-					{
-						string outPath = Path.Combine(mOutDir, pair.Key);
-						Directory.CreateDirectory(Path.GetDirectoryName(outPath)!);
-						File.WriteAllBytes(outPath, pair.Value);
-					}
+					SaveRaw(provider, assetPath);
+					return true;
 				}
 				if ((formats & ExportFormats.Json) != 0)
 				{
-					string? json = LoadJson(provider, assetPath);
-					if (json == null) return false;
-
-					string outPath = Path.Combine(mOutDir, Path.ChangeExtension(assetPath, ".json"));
-					Directory.CreateDirectory(Path.GetDirectoryName(outPath)!);
-					File.WriteAllText(outPath, json);
+					return SaveJson(provider, assetPath, isBulk);
+				}
+				if ((formats & ExportFormats.Texture) != 0)
+				{
+					return SaveTexture(provider, assetPath, isBulk);
 				}
 			}
 			catch (Exception ex)
 			{
 				mLogger?.Log(LogLevel.Warning, $"Export of asset {assetPath} failed! [{ex.GetType().FullName}] {ex.Message}");
-				return false;
 			}
 
-			return true;
+			return false;
 		}
 
-		private string? LoadJson(AbstractVfsFileProvider provider, string assetPath)
+		private void SaveRaw(AbstractVfsFileProvider provider, string assetPath)
 		{
-			string ext = Path.GetExtension(assetPath)[1..];
+			// Need to trim off the file extension or the package won't be found
+			int extPos = assetPath.LastIndexOf('.');
+			if (extPos < 1) extPos = assetPath.Length;
+			var raw = provider.SavePackage(assetPath[..extPos]);
+			foreach (var pair in raw)
+			{
+				string outPath = Path.Combine(mOutDir, pair.Key);
+				Directory.CreateDirectory(Path.GetDirectoryName(outPath)!);
+				File.WriteAllBytes(outPath, pair.Value);
+			}
+		}
+
+		private bool SaveJson(AbstractVfsFileProvider provider, string assetPath, bool isBulk = false)
+		{
+			string ext = GetTrimmedExtension(assetPath);
+			string? json = null;
 
 			switch (ext)
 			{
+				case "":
 				case "uasset":
 				case "umap":
 					{
 						var exports = provider.LoadObjectExports(assetPath);
-						return JsonConvert.SerializeObject(exports, mJsonSettings);
+						json = JsonConvert.SerializeObject(exports, mJsonSettings);
+						break;
 					}
 				case "ini":
 				case "txt":
@@ -233,21 +256,28 @@ namespace Ue4Export
 				case "archive":
 				case "manifest":
 				case "wem":
-					return Encoding.UTF8.GetString(provider.Files[assetPath].Read());
+					json = Encoding.UTF8.GetString(provider.Files[assetPath].Read());
+					break;
 				case "locmeta":
-					return ReadObject<FTextLocalizationMetaDataResource>(provider, assetPath);
+					json = SerializeObject<FTextLocalizationMetaDataResource>(provider, assetPath);
+					break;
 				case "locres":
-					return ReadObject<FTextLocalizationResource>(provider, assetPath);
+					json = SerializeObject<FTextLocalizationResource>(provider, assetPath);
+					break;
 				case "bin" when assetPath.Contains("AssetRegistry"):
-					return ReadObject<FAssetRegistryState>(provider, assetPath);
+					json = SerializeObject<FAssetRegistryState>(provider, assetPath);
+					break;
 				case "bnk":
 				case "pck":
-					return ReadObject<WwiseReader>(provider, assetPath);
+					json = SerializeObject<WwiseReader>(provider, assetPath);
+					break;
 				case "udic":
-					return ReadObject<FOodleDictionaryArchive>(provider, assetPath);
+					json = SerializeObject<FOodleDictionaryArchive>(provider, assetPath);
+					break;
 				case "ushaderbytecode":
 				case "ushadercode":
-					return ReadObject<FShaderCodeArchive>(provider, assetPath);
+					json = SerializeObject<FShaderCodeArchive>(provider, assetPath);
+					break;
 				case "png":
 				case "jpg":
 				case "bmp":
@@ -256,16 +286,139 @@ namespace Ue4Export
 				case "otf":
 				case "ttf":
 				default:
-					mLogger?.Log(LogLevel.Warning, $"{assetPath} - This asset cannot be converted to Json.");
-					return null;
+					if (!isBulk) mLogger?.Log(LogLevel.Warning, $"{assetPath} - This asset cannot be converted to Json.");
+					return isBulk;
 			}
+
+			string outPath = Path.Combine(mOutDir, Path.ChangeExtension(assetPath, ".json"));
+			Directory.CreateDirectory(Path.GetDirectoryName(outPath)!);
+			File.WriteAllText(outPath, json);
+
+			return true;
 		}
 
-		private string ReadObject<T>(AbstractVfsFileProvider provider, string assetPath)
+		private string SerializeObject<T>(AbstractVfsFileProvider provider, string assetPath)
 		{
 			using FArchive archive = provider.CreateReader(assetPath);
 			object obj = Activator.CreateInstance(typeof(T), archive)!;
 			return JsonConvert.SerializeObject(obj, mJsonSettings);
+		}
+
+		private bool SaveTexture(AbstractVfsFileProvider provider, string assetPath, bool isBulk = false)
+		{
+			string ext = GetTrimmedExtension(assetPath);
+
+			switch (ext)
+			{
+				case "":
+				case "uasset":
+					{
+						IEnumerable<UObject> objects = provider.LoadObjectExports(assetPath);
+
+						bool textureFound = false;
+						bool success = true;
+
+						foreach (UObject obj in objects)
+						{
+							UTexture2D? texture = obj as UTexture2D;
+							if (texture == null) continue;
+
+							textureFound = true;
+
+							SKBitmap? bitmap = texture.Decode();
+							if (bitmap == null)
+							{
+								mLogger?.Log(LogLevel.Warning, $"{texture.GetPathName()} - Failed to decode texture.");
+								success = false;
+								continue;
+							}
+
+							mLogger?.Log(LogLevel.Information, $"  Saving texture {texture.Name}");
+
+							string outPath = Path.Combine(mOutDir, $"{texture.GetPathName()}.png");
+							success &= WriteTexture(bitmap, SKEncodedImageFormat.Png, outPath);
+						}
+
+						if (!textureFound)
+						{
+							if (isBulk)
+							{
+								mLogger?.Log(LogLevel.Information, $"  No texture to export");
+							}
+							else
+							{
+								mLogger?.Log(LogLevel.Warning, $"{assetPath} - No textures found in asset.");
+							}
+						}
+
+						return success && (textureFound || isBulk);
+					}
+				case "png":
+				case "jpg":
+				case "bmp":
+					{
+						byte[] data = provider.SaveAsset(assetPath);
+
+						string outPath = Path.Combine(mOutDir, assetPath);
+
+						SKEncodedImageFormat format;
+						switch (ext)
+						{
+							case "bmp":
+								format = SKEncodedImageFormat.Bmp;
+								break;
+							case "jpg":
+								format = SKEncodedImageFormat.Jpeg;
+								break;
+							case "png":
+							default:
+								format = SKEncodedImageFormat.Png;
+								break;
+						}
+
+						using (MemoryStream stream = new MemoryStream(data))
+						{
+							SKBitmap bitmap = SKBitmap.Decode(stream);
+							if (bitmap == null)
+							{
+								mLogger?.Log(LogLevel.Warning, $"{assetPath} - Failed to decode texture.");
+								return false;
+							}
+
+							return WriteTexture(bitmap, format, outPath);
+						}
+					}
+				default:
+					mLogger?.Log(LogLevel.Warning, $"{assetPath} - This asset cannot be saved as a texture.");
+					return false;
+			}
+		}
+
+		private static bool WriteTexture(SKBitmap bitmap, SKEncodedImageFormat outFormat, string outPath)
+		{
+			SKData data = bitmap.Encode(outFormat, 100);
+			if (data == null)
+			{
+
+				return false;
+			}
+
+			using (FileStream file = File.Create(outPath))
+			{
+				data.SaveTo(file);
+			}
+
+			return true;
+		}
+
+		/// <summary>
+		/// Returns the file extension from a path without a leading period
+		/// </summary>
+		private static string GetTrimmedExtension(string path)
+		{
+			string ext = Path.GetExtension(path);
+			if (ext.StartsWith('.')) ext = ext[1..];
+			return ext;
 		}
 
 		[Flags]
@@ -273,7 +426,8 @@ namespace Ue4Export
 		{
 			None = 0x00,
 			Raw = 0x01,
-			Json = 0x02
+			Json = 0x02,
+			Texture = 0x04
 		}
 	}
 }

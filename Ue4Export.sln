@@ -9,6 +9,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CUE4Parse", "CUE4Parse\CUE4
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CUE4Parse-Natives", "CUE4Parse\CUE4Parse-Natives\builddir\CUE4Parse-Natives.vcxproj", "{9E289AC9-9029-3B8D-B976-9115A298CCF8}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CUE4Parse-Conversion", "CUE4Parse\CUE4Parse-Conversion\CUE4Parse-Conversion.csproj", "{949C0A63-0FA8-426D-AEF5-16B8A5E843C3}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -41,6 +43,14 @@ Global
 		{9E289AC9-9029-3B8D-B976-9115A298CCF8}.Release|x64.Build.0 = Release|x64
 		{9E289AC9-9029-3B8D-B976-9115A298CCF8}.RelWithDebInfo|x64.ActiveCfg = RelWithDebInfo|x64
 		{9E289AC9-9029-3B8D-B976-9115A298CCF8}.RelWithDebInfo|x64.Build.0 = RelWithDebInfo|x64
+		{949C0A63-0FA8-426D-AEF5-16B8A5E843C3}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{949C0A63-0FA8-426D-AEF5-16B8A5E843C3}.Debug|x64.Build.0 = Debug|Any CPU
+		{949C0A63-0FA8-426D-AEF5-16B8A5E843C3}.MinSizeRel|x64.ActiveCfg = Debug|Any CPU
+		{949C0A63-0FA8-426D-AEF5-16B8A5E843C3}.MinSizeRel|x64.Build.0 = Debug|Any CPU
+		{949C0A63-0FA8-426D-AEF5-16B8A5E843C3}.Release|x64.ActiveCfg = Release|Any CPU
+		{949C0A63-0FA8-426D-AEF5-16B8A5E843C3}.Release|x64.Build.0 = Release|Any CPU
+		{949C0A63-0FA8-426D-AEF5-16B8A5E843C3}.RelWithDebInfo|x64.ActiveCfg = Release|Any CPU
+		{949C0A63-0FA8-426D-AEF5-16B8A5E843C3}.RelWithDebInfo|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

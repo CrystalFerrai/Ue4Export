@@ -22,7 +22,9 @@ MyGame/Content/Maps/Map1/Map1
 MyGame/Content/BP/SomeSystem/SomeBP
 ```
 
-By default, assets are exported as Json. You can choose to export raw assets (.uasset files) instead by placing a `[Raw]` header above a list of assets. You can switch back to Json using a `[Json]` header or export as both using `[Raw,Json]`. You can also leave comments by starting a line with `#`.
+By default, assets are exported as Json. You can choose to export raw assets (.uasset files) instead by placing a `[Raw]` header above a list of assets. You can switch back to Json using a `[Json]`. Using `[Texture]` will export all texture from an asset. You can also combine multiple export types by comma separating them, such as `[Raw,Texture].
+
+Lines that start with `#` are comments which are ignored by the program.
 
 Asset paths in the asset list file also have basic wildcard support. A `?` can represent any single character in the path and a `*` can represent 0 or more characters.
 
@@ -35,12 +37,18 @@ Here is a more complex asset list example.
 MyGame/Content/Maps/Map1/*
 
 [Json]
-MyGame/Content/BP/SomeSystem/SomeBP
+MyGame/Content/BP/SomeSystem/SomeBP.uasset
+
+[Texture]
+# Export all assets in a directory as textures
+MyGame/Content/UI/Icons/*
 
 # Export the following assets as both Raw and Json
 [Raw,Json]
 MyGame/Content/UI/Component/MyButton
 ```
+
+Note: When specifying an asset path, you must include a file extension unless the extension is `uasset` or `umap`, in which case it is optional.
 
 ### Batch Script
 
