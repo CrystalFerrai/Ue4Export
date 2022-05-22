@@ -460,6 +460,8 @@ namespace Ue4Export
 
 		private static bool WriteTexture(SKBitmap bitmap, SKEncodedImageFormat outFormat, string outPath)
 		{
+			Directory.CreateDirectory(Path.GetDirectoryName(outPath)!);
+
 			SKData data = bitmap.Encode(outFormat, 100);
 			if (data == null)
 			{
