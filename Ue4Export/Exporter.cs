@@ -81,7 +81,6 @@ namespace Ue4Export
 					provider.SubmitKey(vfsReader.EncryptionKeyGuid, new FAesKey(new byte[32]));
 				}
 
-				provider.LoadMappings(); // Does nothing unless the game is Fortnite (in which case it tries to download type mappings from the web)
 				provider.LoadLocalization(ELanguage.English);
 
 				ExportFormats formats = ExportFormats.Text;
@@ -186,28 +185,30 @@ namespace Ue4Export
 		{
 			mLogger?.Log(LogLevel.Information, $"Exporting {assetPath}...");
 
+			bool ret = true;
+
 			try
 			{
 				if ((formats & ExportFormats.Raw) != 0)
 				{
 					SaveRaw(provider, assetPath);
-					return true;
 				}
 				if ((formats & ExportFormats.Text) != 0)
 				{
-					return SaveText(provider, assetPath, isBulk);
+					ret = ret && SaveText(provider, assetPath, isBulk);
 				}
 				if ((formats & ExportFormats.Texture) != 0)
 				{
-					return SaveTexture(provider, assetPath, isBulk);
+					ret = ret && SaveTexture(provider, assetPath, isBulk);
 				}
 			}
 			catch (Exception ex)
 			{
 				mLogger?.Log(LogLevel.Warning, $"Export of asset {assetPath} failed! [{ex.GetType().FullName}] {ex.Message}");
+				ret = false;
 			}
 
-			return false;
+			return ret;
 		}
 
 		private void SaveRaw(AbstractVfsFileProvider provider, string assetPath)
@@ -244,6 +245,8 @@ namespace Ue4Export
 				case "otf":
 				case "ttf":
 				case "wem":
+				case "locmeta":
+				case "locres":
 					{
 						byte[] data = provider.Files[assetPath].Read();
 
@@ -286,7 +289,7 @@ namespace Ue4Export
 				case "uasset":
 				case "umap":
 					{
-						var exports = provider.LoadObjectExports(assetPath);
+						var exports = provider.LoadAllObjects(assetPath);
 						text = JsonConvert.SerializeObject(exports, mJsonSettings);
 						break;
 					}
@@ -377,7 +380,7 @@ namespace Ue4Export
 				case "":
 				case "uasset":
 					{
-						IEnumerable<UObject> objects = provider.LoadObjectExports(assetPath);
+						IEnumerable<UObject> objects = provider.LoadAllObjects(assetPath);
 
 						bool textureFound = false;
 						bool success = true;
@@ -395,6 +398,16 @@ namespace Ue4Export
 								mLogger?.Log(LogLevel.Warning, $"{texture.GetPathName()} - Failed to decode texture.");
 								success = false;
 								continue;
+							}
+
+							if (!texture.SRGB)
+							{
+								SKColor[] pixels = bitmap.Pixels;
+								for (int i = 0; i < pixels.Length; ++i)
+								{
+									pixels[i] = LinearToSrgb(pixels[i]);
+								}
+								bitmap.Pixels = pixels;
 							}
 
 							mLogger?.Log(LogLevel.Information, $"  Saving texture {texture.Name}");
@@ -440,7 +453,7 @@ namespace Ue4Export
 								break;
 						}
 
-						using (MemoryStream stream = new MemoryStream(data))
+						using (MemoryStream stream = new(data))
 						{
 							SKBitmap bitmap = SKBitmap.Decode(stream);
 							if (bitmap == null)
@@ -465,7 +478,6 @@ namespace Ue4Export
 			SKData data = bitmap.Encode(outFormat, 100);
 			if (data == null)
 			{
-
 				return false;
 			}
 
@@ -485,6 +497,22 @@ namespace Ue4Export
 			string ext = Path.GetExtension(path);
 			if (ext.StartsWith('.')) ext = ext[1..];
 			return ext;
+		}
+
+		private const float FloatToInt = 255.0f;
+		private const float IntToFloat = 1.0f / FloatToInt;
+
+		public static SKColor LinearToSrgb(SKColor linearColor)
+		{
+			return new SKColor(LinearToSrgb(linearColor.Red * IntToFloat), LinearToSrgb(linearColor.Green * IntToFloat), LinearToSrgb(linearColor.Blue * IntToFloat), linearColor.Alpha);
+		}
+
+		public static byte LinearToSrgb(float linear)
+		{
+			if (linear <= 0.0f) return 0;
+			if (linear <= 0.00313066844250063f) return (byte)(linear * 12.92f * FloatToInt);
+			if (linear < 1) return (byte)((1.055f * Math.Pow(linear, 1.0f / 2.4f) - 0.055f) * FloatToInt);
+			return 255;
 		}
 
 		[Flags]
