@@ -78,4 +78,4 @@ To publish a build for release, run this command from the directory containing t
 dotnet publish -p:DebugType=None -r win-x64 -c Release --self-contained false
 ```
 
-The resulting build can be located at `Ue4Export\bin\Release\net6.0\win-x64\publish`.
+The resulting build can be located at `Ue4Export\bin\Release\net8.0\win-x64\publish`.

@@ -506,12 +506,12 @@ namespace Ue4Export
 		private const float FloatToInt = 255.0f;
 		private const float IntToFloat = 1.0f / FloatToInt;
 
-		public static SKColor LinearToSrgb(SKColor linearColor)
+		private static SKColor LinearToSrgb(SKColor linearColor)
 		{
 			return new SKColor(LinearToSrgb(linearColor.Red * IntToFloat), LinearToSrgb(linearColor.Green * IntToFloat), LinearToSrgb(linearColor.Blue * IntToFloat), linearColor.Alpha);
 		}
 
-		public static byte LinearToSrgb(float linear)
+		private static byte LinearToSrgb(float linear)
 		{
 			if (linear <= 0.0f) return 0;
 			if (linear <= 0.00313066844250063f) return (byte)(linear * 12.92f * FloatToInt);
