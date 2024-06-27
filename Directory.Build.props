@@ -1,0 +1,7 @@
+<Project>
+  <!-- Significantly improves build times and document open times -->
+  <PropertyGroup>
+    <NuGetAudit>false</NuGetAudit>
+	<RunAnalyzers>false</RunAnalyzers>
+  </PropertyGroup>
+</Project>

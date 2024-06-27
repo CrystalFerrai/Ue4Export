@@ -1,4 +1,4 @@
-﻿// Copyright 2021 Crystal Ferrai
+﻿// Copyright 2024 Crystal Ferrai
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,6 +21,9 @@ namespace Ue4Export
 	{
 		private readonly TextWriter[] mWriters;
 
+		/// <summary>
+		/// The minimum level of messages to print. Logged messages below this threshold will be discarded
+		/// </summary>
 		public LogLevel LogLevel { get; set; }
 
 		public Logger(TextWriter defaultOutput)
@@ -38,11 +41,18 @@ namespace Ue4Export
 #endif
 		}
 
+		/// <summary>
+		/// Sets the output device the logger will use for a specific log level.
+		/// </summary>
 		public void SetOutput(LogLevel level, TextWriter output)
 		{
 			mWriters[(int)level] = output;
 		}
 
+
+		/// <summary>
+		/// Logs a message at a specific level
+		/// </summary>
 		public void Log(LogLevel level, string message)
 		{
 			if (level < LogLevel) return;
@@ -65,6 +75,28 @@ namespace Ue4Export
 			OnPostLog(level, message);
 		}
 
+		/// <summary>
+		/// Logs a completely empty line at a specific level
+		/// </summary>
+		public void LogEmptyLine(LogLevel level)
+		{
+			if (level < LogLevel) return;
+
+			OnPreLog(level, string.Empty);
+
+			mWriters[(int)level].WriteLine(string.Empty);
+
+			OnPostLog(level, string.Empty);
+		}
+
+		/// <summary>
+		/// Helper for logging an error
+		/// </summary>
+		public void LogError(string message)
+		{
+			Log(LogLevel.Error, message);
+		}
+
 		protected virtual void OnPreLog(LogLevel level, string message)
 		{
 		}
@@ -79,8 +111,12 @@ namespace Ue4Export
 	/// </summary>
 	internal class ConsoleLogger : Logger
 	{
+		private readonly ConsoleColor mOriginalColor;
+
 		public ConsoleLogger() : base(Console.Out)
 		{
+			mOriginalColor = Console.ForegroundColor;
+
 			SetOutput(LogLevel.Error, Console.Error);
 			SetOutput(LogLevel.Fatal, Console.Error);
 		}
@@ -108,16 +144,45 @@ namespace Ue4Export
 					break;
 			}
 		}
+
+		protected override void OnPostLog(LogLevel level, string message)
+		{
+			Console.ForegroundColor = mOriginalColor;
+		}
 	}
 
+	/// <summary>
+	/// Represents the importance of messages being logged
+	/// </summary>
 	internal enum LogLevel : int
 	{
+		/// <summary>
+		/// For spam messages that will not be printed by default
+		/// </summary>
 		Verbose,
+		/// <summary>
+		/// For debugging messages that will only print ina  debug build by default
+		/// </summary>
 		Debug,
+		/// <summary>
+		/// For informational messages. Will print by default
+		/// </summary>
 		Information,
+		/// <summary>
+		/// For important informational messages. Will print by default
+		/// </summary>
 		Important,
+		/// <summary>
+		/// For warnings. Will print by default
+		/// </summary>
 		Warning,
+		/// <summary>
+		/// For errors. Will print by default
+		/// </summary>
 		Error,
+		/// <summary>
+		/// For fatal errors. Will always print
+		/// </summary>
 		Fatal
 	}
 }

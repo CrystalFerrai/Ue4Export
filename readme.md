@@ -6,7 +6,7 @@ Releases can be found [here](https://github.com/CrystalFerrai/Ue4Export/releases
 
 This program is released standalone, meaning there is no installer. Simply extract the files to a directory to install it.
 
-You will need to install the [.NET 6.0 runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0) if you do not already have it.
+You will need to install the [.NET 8.0 runtime](https://dotnet.microsoft.com/en-us/download/dotnet/8.0) if you do not already have it.
 
 ## Usage
 
@@ -62,6 +62,8 @@ Next, create a batch script to run the program, placing it next to Ue4Export.exe
 The first parameter is the directory containing the pak files for your game. The second is the list of assets you created for exporting. The third is a directory in which to output the Json files for the assets.
 
 Now run your batch script and wait for it to finish. If there were no errors, you should find the output files in the specified output directory.
+
+If the pak files you are exporting from are encrypted, you will need to pass the optional parameter `--key [value]` where `[value]` is the AES key as a hexadecimal string.
 
 ## Building
 Clone the repository, including submodules.

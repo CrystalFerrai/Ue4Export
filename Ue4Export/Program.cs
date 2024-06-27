@@ -12,57 +12,54 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using CUE4Parse.Compression;
+
 namespace Ue4Export
 {
 	internal class Program
 	{
 		static int Main(string[] args)
 		{
-			if (args.Length != 3)
+			Logger logger = new ConsoleLogger();
+
+			if (args.Length == 0)
 			{
-				Console.WriteLine("Exports a set of files from a UE4 game. Usage:\n\nUe4Export [game asset path] [asset list] [output directory]\n\n  game asset path = path to a directory containing .pak files for a game\n\n  asset list = text file with list of asset paths to export. See readme.md for more details.\n\n  output directory = directory to output exported assets");
-				return 0;
+				Options.PrintUsage(logger);
+				return OnExit(0);
 			}
 
-			ConsoleLogger logger = new();
-
-			string gameDir = args[0];
-			if (!Directory.Exists(gameDir))
+			Options? options;
+			if (!Options.TryParseCommandLine(args, logger, out options))
 			{
-				logger.Log(LogLevel.Fatal, $"Could not access game directory \"{gameDir}\"");
-				return 1;
-			}
-
-			string assetListPath = args[1];
-			if (!File.Exists(assetListPath))
-			{
-				logger.Log(LogLevel.Fatal, $"Could not access asset list \"{assetListPath}\"");
-				return 1;
-			}
-
-			string outDir = args[2];
-			try
-			{
-				Directory.CreateDirectory(outDir);
-			}
-			catch (Exception ex)
-			{
-				logger.Log(LogLevel.Fatal, $"Could not access/create output directory \"{outDir}\". [{ex.GetType().FullName}] {ex.Message}");
-				return 1;
+				logger.LogEmptyLine(LogLevel.Information);
+				Options.PrintUsage(logger);
+				return OnExit(1);
 			}
 
 			try
 			{
-				DeleteDirectoryContents(outDir);
+				Directory.CreateDirectory(options.OutputDirectory);
 			}
 			catch (Exception ex)
 			{
-				logger.Log(LogLevel.Fatal, $"Could not clear output directory \"{outDir}\". [{ex.GetType().FullName}] {ex.Message}");
-				return 1;
+				logger.Log(LogLevel.Fatal, $"Could not access/create output directory \"{options.OutputDirectory}\". [{ex.GetType().FullName}] {ex.Message}");
+				return OnExit(1);
 			}
 
-			Exporter exporter = new Exporter(gameDir, outDir, logger);
-			bool success = exporter.Export(assetListPath);
+			try
+			{
+				DeleteDirectoryContents(options.OutputDirectory);
+			}
+			catch (Exception ex)
+			{
+				logger.Log(LogLevel.Fatal, $"Could not clear output directory \"{options.OutputDirectory}\". [{ex.GetType().FullName}] {ex.Message}");
+				return OnExit(1);
+			}
+
+			OodleHelper.Initialize(OodleHelper.OODLE_DLL_NAME);
+
+			Exporter exporter = new Exporter(options, logger);
+			bool success = exporter.Export();
 
 			if (!success)
 			{
@@ -74,7 +71,7 @@ namespace Ue4Export
 			// Pause if debugger attached
 			if (System.Diagnostics.Debugger.IsAttached) Console.ReadKey();
 
-			return success ? 0 : 2;
+			return OnExit(success ? 0 : 2);
 		}
 
 		private static void DeleteDirectoryContents(string path)
@@ -90,6 +87,16 @@ namespace Ue4Export
 			{
 				dir.Delete();
 			}
+		}
+
+		private static int OnExit(int code)
+		{
+			if (System.Diagnostics.Debugger.IsAttached)
+			{
+				Console.Out.WriteLine("Press a key to exit");
+				Console.ReadKey();
+			}
+			return code;
 		}
 	}
 }

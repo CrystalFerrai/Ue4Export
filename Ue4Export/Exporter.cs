@@ -39,7 +39,9 @@ namespace Ue4Export
 		private static readonly HashSet<string> sExtensionsToIgnore;
 
 		private readonly string mGameDir;
+		private readonly string mAssetListPath;
 		private readonly string mOutDir;
+		private readonly FAesKey mAesKey;
 
 		private readonly Logger? mLogger;
 
@@ -56,10 +58,12 @@ namespace Ue4Export
 			};
 		}
 
-		public Exporter(string gameDir, string outDir, Logger? logger)
+		public Exporter(Options options, Logger? logger)
 		{
-			mGameDir = gameDir;
-			mOutDir = outDir;
+			mGameDir = options.PaksDirectory;
+			mAssetListPath = options.AssetListFile;
+			mOutDir = options.OutputDirectory;
+			mAesKey = options.EncryptionKey is null ? new(new byte[32]) : new(options.EncryptionKey);
 			mLogger = logger;
 
 			mJsonSettings = new JsonSerializerSettings()
@@ -68,7 +72,7 @@ namespace Ue4Export
 			};
 		}
 
-		public bool Export(string assetListPath)
+		public bool Export()
 		{
 			bool success = true;
 
@@ -78,7 +82,7 @@ namespace Ue4Export
 
 				foreach (var vfsReader in provider.UnloadedVfs)
 				{
-					provider.SubmitKey(vfsReader.EncryptionKeyGuid, new FAesKey(new byte[32]));
+					provider.SubmitKey(vfsReader.EncryptionKeyGuid, mAesKey);
 				}
 
 				provider.LoadLocalization(ELanguage.English);
@@ -86,7 +90,7 @@ namespace Ue4Export
 				ExportFormats formats = ExportFormats.Text;
 				mLogger?.Log(LogLevel.Important, "Export format is now [Text]");
 
-				foreach (string line in File.ReadAllLines(assetListPath))
+				foreach (string line in File.ReadAllLines(mAssetListPath))
 				{
 					if (string.IsNullOrWhiteSpace(line)) continue;
 
