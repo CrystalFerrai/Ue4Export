@@ -74,6 +74,30 @@ Now run your batch script and wait for it to finish. If there were no errors, yo
 
 If the pak files you are exporting from are encrypted, you will need to pass the optional parameter `--key [value]` where `[value]` is the AES key as a hexadecimal string.
 
+### Command Line Parameters
+
+Run the program in a console window with no parmaters to see a list of options like the following.
+
+```
+Usage: Ue4Export [[options]] [game assets directory] [asset list file] [output directory]
+
+  [game assets directory]  Path to a directory containing .pak files for a game.
+
+  [asset list file]        Path to text file with list of asset paths to export. See readme.md for more details.
+
+  [output directory]       Directory to output exported assets.
+
+Options
+
+  --mix-output  Do not clear the contents of the output directory before exporting.
+
+  --key [key]   The AES encryption key for the game's data if the data is encrypted.
+
+  --quiet       Minimal logging. Skips listing individual assets.
+
+  --silent      No logging unless an error occurs.
+```
+
 ## Building
 Clone the repository, including submodules.
 ```
