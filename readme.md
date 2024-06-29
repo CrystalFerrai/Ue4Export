@@ -1,4 +1,4 @@
-Command line program to export assets from a UE4 game to Json files. The main purpose for this program is to automate repetitive asset exporting when data mining games that update regularly.
+Command line program to export assets from a UE4 or UE5 game to Json files. The main purpose for this program is to automate repetitive asset exporting when data mining games that update regularly.
 
 ## Installation
 
