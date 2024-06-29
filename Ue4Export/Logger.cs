@@ -161,7 +161,7 @@ namespace Ue4Export
 		/// </summary>
 		Verbose,
 		/// <summary>
-		/// For debugging messages that will only print ina  debug build by default
+		/// For debugging messages that will only print in a debug build by default
 		/// </summary>
 		Debug,
 		/// <summary>

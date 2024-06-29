@@ -22,7 +22,14 @@ MyGame/Content/Maps/Map1/Map1
 MyGame/Content/BP/SomeSystem/SomeBP
 ```
 
-By default, assets are exported as text. You can choose to export assets in their native format instead by placing a `[Raw]` header above a list of assets. You can switch back to text using a `[Text]` header. Using `[Texture]` will export all texture from an asset. You can also combine multiple export types by comma separating them, such as `[Raw,Texture]`.
+By default, the program tries to determine the best export format for each asset. You can specify specific export formats to override this behavior by placing a header above a group of asset paths.
+
+* `[Auto]` Attempts to determine the best format to use for each asset. Falls back on `[Raw]` if unable to find a format.
+* `[Raw]` Exports assets in their native format.
+* `[Text]` Attempts to export assets as plain text.
+* `[Texture]` Attempts to extract texture data from assets and exports that data as images.
+
+You can also combine multiple export types by comma separating them, such as `[Raw,Texture]`. `[Auto]` cannot be combined with other formats.
 
 Lines that start with `#` are comments which are ignored by the program.
 
@@ -37,6 +44,7 @@ Here is a more complex asset list example.
 MyGame/Content/Maps/Map1/*
 
 [Text]
+# Export a specific asset
 MyGame/Content/BP/SomeSystem/SomeBP.uasset
 
 [Texture]
@@ -46,6 +54,7 @@ MyGame/Content/UI/Icons/*
 # Export the following assets as both Raw and Json
 [Raw,Text]
 MyGame/Content/UI/Component/MyButton
+MyGame/Content/UI/Screen/MyStartScreen
 ```
 
 Note: When specifying an asset path, you must include a file extension unless the extension is `uasset` or `umap`, in which case it is optional.

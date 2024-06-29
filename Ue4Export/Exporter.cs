@@ -87,8 +87,8 @@ namespace Ue4Export
 
 				provider.LoadLocalization(ELanguage.English);
 
-				ExportFormats formats = ExportFormats.Text;
-				mLogger?.Log(LogLevel.Important, "Export format is now [Text]");
+				ExportFormats formats = ExportFormats.Auto;
+				mLogger?.Log(LogLevel.Important, "Export format is now [Auto]");
 
 				foreach (string line in File.ReadAllLines(mAssetListPath))
 				{
@@ -111,9 +111,13 @@ namespace Ue4Export
 							return false;
 						}
 
+						ExportFormats oldFormats = formats;
 						formats = ParseFormats(trimmed[1..^1]);
 
-						mLogger?.Log(LogLevel.Important, $"Export format is now [{formats.ToString().Replace(" |", ",")}]");
+						if (oldFormats != formats)
+						{
+							mLogger?.Log(LogLevel.Important, $"Export format is now [{formats.ToString().Replace(" |", ",")}]");
+						}
 
 						continue;
 					}
@@ -132,24 +136,47 @@ namespace Ue4Export
 		{
 			ExportFormats formats = ExportFormats.None;
 
+			bool checkIsAuto()
+			{
+                if (formats == ExportFormats.Auto)
+				{
+					mLogger?.Log(LogLevel.Warning, "[Auto] format cannot be combined with other formats in the same group. Other formats will be ignored.");
+					return true;
+				}
+				return false;
+            }
+
 			string[] headers = input.Split(',');
 			foreach (string h in headers)
 			{
 				string header = h.Trim().ToLowerInvariant();
 				switch (header)
 				{
+					case "auto":
+						if (formats != ExportFormats.None && formats != ExportFormats.Auto)
+						{
+							mLogger?.Log(LogLevel.Warning, "[Auto] format cannot be combined with other formats in the same group. Other formats will be ignored.");
+						}
+						formats = ExportFormats.Auto;
+						break;
 					case "text":
-						formats |= ExportFormats.Text;
+						if (!checkIsAuto())
+						{
+							formats |= ExportFormats.Text;
+						}
 						break;
 					case "raw":
-						formats |= ExportFormats.Raw;
+						if (!checkIsAuto())
+						{
+							formats |= ExportFormats.Raw;
+						}
 						break;
 					case "texture":
-						formats |= ExportFormats.Texture;
+						if (!checkIsAuto())
+						{
+							formats |= ExportFormats.Texture;
+						}
 						break;
-					case "json":
-						mLogger?.Log(LogLevel.Warning, "Export format [Json] is deprecated. Please use [Text] to get Json output.");
-						goto case "text";
 					default:
 						mLogger?.Log(LogLevel.Error, $"Unrecognized export format {input}");
 						return ExportFormats.None;
@@ -181,11 +208,11 @@ namespace Ue4Export
 			}
 			else
 			{
-				return ExportAsset(provider, formats, searchPattern);
+				return ExportAsset(provider, formats, searchPattern, false);
 			}
 		}
 
-		private bool ExportAsset(AbstractVfsFileProvider provider, ExportFormats formats, string assetPath, bool isBulk = false)
+		private bool ExportAsset(AbstractVfsFileProvider provider, ExportFormats formats, string assetPath, bool isBulkExport)
 		{
 			mLogger?.Log(LogLevel.Information, $"Exporting {assetPath}...");
 
@@ -193,17 +220,21 @@ namespace Ue4Export
 
 			try
 			{
+				if ((formats & ExportFormats.Auto) != 0)
+				{
+					SaveAuto(provider, assetPath, isBulkExport);
+				}
 				if ((formats & ExportFormats.Raw) != 0)
 				{
 					SaveRaw(provider, assetPath);
 				}
 				if ((formats & ExportFormats.Text) != 0)
 				{
-					ret = ret && SaveText(provider, assetPath, isBulk);
+					ret = ret && SaveText(provider, assetPath, true, isBulkExport);
 				}
 				if ((formats & ExportFormats.Texture) != 0)
 				{
-					ret = ret && SaveTexture(provider, assetPath, isBulk);
+					ret = ret && SaveTexture(provider, assetPath, true, isBulkExport);
 				}
 			}
 			catch (Exception ex)
@@ -213,6 +244,18 @@ namespace Ue4Export
 			}
 
 			return ret;
+		}
+
+		private void SaveAuto(AbstractVfsFileProvider provider, string assetPath, bool isBulkExport)
+		{
+			bool saved =
+				SaveTexture(provider, assetPath, false, false) ||
+				SaveText(provider, assetPath, false, false);
+
+			if (!saved)
+			{
+				SaveRaw(provider, assetPath);
+			}
 		}
 
 		private void SaveRaw(AbstractVfsFileProvider provider, string assetPath)
@@ -281,7 +324,7 @@ namespace Ue4Export
 			}
 		}
 
-		private bool SaveText(AbstractVfsFileProvider provider, string assetPath, bool isBulk = false)
+		private bool SaveText(AbstractVfsFileProvider provider, string assetPath, bool logErrors, bool isBulkExport)
 		{
 			string ext = GetTrimmedExtension(assetPath);
 			string? text = null;
@@ -348,8 +391,8 @@ namespace Ue4Export
 				case "ttf":
 				case "wem":
 				default:
-					if (!isBulk) mLogger?.Log(LogLevel.Warning, $"{assetPath} - This asset cannot be converted to Text.");
-					return isBulk;
+					if (!isBulkExport) mLogger?.Log(LogLevel.Warning, $"{assetPath} - This asset cannot be converted to Text.");
+					return isBulkExport;
 			}
 
 			string outPath;
@@ -375,7 +418,7 @@ namespace Ue4Export
 			return JsonConvert.SerializeObject(obj, mJsonSettings);
 		}
 
-		private bool SaveTexture(AbstractVfsFileProvider provider, string assetPath, bool isBulk = false)
+		private bool SaveTexture(AbstractVfsFileProvider provider, string assetPath, bool logErrors, bool isBulkExport)
 		{
 			string ext = GetTrimmedExtension(assetPath);
 
@@ -416,13 +459,13 @@ namespace Ue4Export
 
 							mLogger?.Log(LogLevel.Information, $"  Saving texture {texture.Name}");
 
-							string outPath = Path.Combine(mOutDir, $"{texture.GetPathName()}.png");
+							string outPath = Path.Combine(mOutDir, $"{ConvertAssetPath(texture.GetPathName())}.png");
 							success &= WriteTexture(bitmap, SKEncodedImageFormat.Png, outPath);
 						}
 
-						if (!textureFound)
+						if (logErrors && !textureFound)
 						{
-							if (isBulk)
+							if (isBulkExport)
 							{
 								mLogger?.Log(LogLevel.Information, $"  No texture to export");
 							}
@@ -432,7 +475,7 @@ namespace Ue4Export
 							}
 						}
 
-						return success && (textureFound || isBulk);
+						return success && (textureFound || isBulkExport);
 					}
 				case "png":
 				case "jpg":
@@ -470,7 +513,7 @@ namespace Ue4Export
 						}
 					}
 				default:
-					mLogger?.Log(LogLevel.Warning, $"{assetPath} - This asset cannot be saved as a texture.");
+					if (logErrors && !isBulkExport) mLogger?.Log(LogLevel.Warning, $"{assetPath} - This asset cannot be saved as a texture.");
 					return false;
 			}
 		}
@@ -491,6 +534,35 @@ namespace Ue4Export
 			}
 
 			return true;
+		}
+
+		/// <summary>
+		/// If asset file name is the same as asset name, remove asset name from the path.
+		/// Also converts path separators to OS format.
+		/// </summary>
+		private static string ConvertAssetPath(string assetPath)
+		{
+			string? dir = Path.GetDirectoryName(assetPath);
+			string? file = Path.GetFileName(assetPath);
+
+			if (file is null) return assetPath;
+
+			string[] parts = file.Split('.');
+			if (parts.Length > 1)
+			{
+				if (parts[0] == parts[1])
+				{
+					parts[1] = string.Empty;
+				}
+			}
+			file = string.Join(".", parts.Where(p => !string.IsNullOrEmpty(p)));
+
+			if (dir is null)
+			{
+				return file;
+			}
+
+			return Path.Combine(dir, file);
 		}
 
 		/// <summary>
@@ -523,9 +595,10 @@ namespace Ue4Export
 		private enum ExportFormats
 		{
 			None = 0x00,
-			Raw = 0x01,
-			Text = 0x02,
-			Texture = 0x04
+			Auto = 0x01,
+			Raw = 0x02,
+			Text = 0x04,
+			Texture = 0x08
 		}
 	}
 }

@@ -24,7 +24,7 @@ namespace Ue4Export
 
 			if (args.Length == 0)
 			{
-				Options.PrintUsage(logger);
+				Options.PrintUsage(logger, LogLevel.Important);
 				return OnExit(0);
 			}
 
@@ -32,9 +32,22 @@ namespace Ue4Export
 			if (!Options.TryParseCommandLine(args, logger, out options))
 			{
 				logger.LogEmptyLine(LogLevel.Information);
-				Options.PrintUsage(logger);
+				Options.PrintUsage(logger, LogLevel.Important);
 				return OnExit(1);
 			}
+
+			// Default log level is Information in release builds and Debug in debug builds
+			if (options.IsSilent)
+			{
+				logger.LogLevel = LogLevel.Error;
+			}
+			else if (options.IsQuiet)
+			{
+				logger.LogLevel = LogLevel.Important;
+			}
+
+			options.PrintConfiguration(logger, LogLevel.Information);
+			logger.LogEmptyLine(LogLevel.Information);
 
 			try
 			{
@@ -46,18 +59,26 @@ namespace Ue4Export
 				return OnExit(1);
 			}
 
-			try
+			if (!options.MixOutput)
 			{
-				DeleteDirectoryContents(options.OutputDirectory);
-			}
-			catch (Exception ex)
-			{
-				logger.Log(LogLevel.Fatal, $"Could not clear output directory \"{options.OutputDirectory}\". [{ex.GetType().FullName}] {ex.Message}");
-				return OnExit(1);
+				try
+				{
+					if (Directory.Exists(options.OutputDirectory))
+					{
+						logger.Log(LogLevel.Important, "Clearing output directory...");
+						DeleteDirectoryContents(options.OutputDirectory);
+					}
+				}
+				catch (Exception ex)
+				{
+					logger.Log(LogLevel.Fatal, $"Could not clear output directory \"{options.OutputDirectory}\". [{ex.GetType().FullName}] {ex.Message}");
+					return OnExit(1);
+				}
 			}
 
 			OodleHelper.Initialize(OodleHelper.OODLE_DLL_NAME);
 
+			logger.Log(LogLevel.Important, "Exporting assets...");
 			Exporter exporter = new Exporter(options, logger);
 			bool success = exporter.Export();
 
@@ -67,9 +88,6 @@ namespace Ue4Export
 			}
 
 			logger.Log(LogLevel.Important, "\nExports complete.");
-
-			// Pause if debugger attached
-			if (System.Diagnostics.Debugger.IsAttached) Console.ReadKey();
 
 			return OnExit(success ? 0 : 2);
 		}
