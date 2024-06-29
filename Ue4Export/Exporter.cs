@@ -248,9 +248,28 @@ namespace Ue4Export
 
 		private void SaveAuto(AbstractVfsFileProvider provider, string assetPath, bool isBulkExport)
 		{
-			bool saved =
-				SaveTexture(provider, assetPath, false, false) ||
-				SaveText(provider, assetPath, false, false);
+			bool saved = false;
+
+			try
+			{
+				saved = SaveTexture(provider, assetPath, false, false);
+			}
+			catch
+			{
+				mLogger?.Log(LogLevel.Debug, "  Exception thrown when attempting to export as texture. Trying another format...");
+			}
+
+			if (!saved)
+			{
+				try
+				{
+					saved = SaveText(provider, assetPath, false, false);
+				}
+				catch
+				{
+					mLogger?.Log(LogLevel.Debug, "  Exception thrown when attempting to export as text. Trying another format...");
+				}
+			}
 
 			if (!saved)
 			{
@@ -284,6 +303,11 @@ namespace Ue4Export
 				case "json":
 				case "archive":
 				case "manifest":
+				case "bnk":
+				case "pck":
+				case "udic":
+				case "ushaderbytecode":
+				case "ushadercode":
 				case "png":
 				case "jpg":
 				case "bmp":
@@ -391,7 +415,7 @@ namespace Ue4Export
 				case "ttf":
 				case "wem":
 				default:
-					if (!isBulkExport) mLogger?.Log(LogLevel.Warning, $"{assetPath} - This asset cannot be converted to Text.");
+					if (logErrors && !isBulkExport) mLogger?.Log(LogLevel.Warning, $"{assetPath} - This asset cannot be converted to Text.");
 					return isBulkExport;
 			}
 
