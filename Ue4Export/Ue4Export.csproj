@@ -24,10 +24,17 @@
 
   <ItemGroup>
 	<UpToDateCheckInput Include="$(SolutionDir)lib\oo2core_9_win64.dll" />
+	<UpToDateCheckInput Include="$(SolutionDir)lib\zlib-ng2.dll" />
   </ItemGroup>
 
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+  <Target Name="CopyLibs" AfterTargets="PostBuildEvent">
     <Copy SourceFiles="$(SolutionDir)lib\oo2core_9_win64.dll" DestinationFolder="$(TargetDir)" />
+    <Copy SourceFiles="$(SolutionDir)lib\zlib-ng2.dll" DestinationFolder="$(TargetDir)" />
+  </Target>
+
+  <Target Name="PublishCopyLibs" AfterTargets="CopyFilesToOutputDirectory">
+    <Copy SourceFiles="$(SolutionDir)lib\oo2core_9_win64.dll" DestinationFolder="$(PublishDir)" />
+    <Copy SourceFiles="$(SolutionDir)lib\zlib-ng2.dll" DestinationFolder="$(PublishDir)" />
   </Target>
 
 </Project>

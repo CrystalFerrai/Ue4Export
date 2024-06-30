@@ -76,6 +76,7 @@ namespace Ue4Export
 				}
 			}
 
+			ZlibHelper.Initialize(ZlibHelper.DLL_NAME);
 			OodleHelper.Initialize(OodleHelper.OODLE_DLL_NAME);
 
 			logger.Log(LogLevel.Important, "Exporting assets...");
