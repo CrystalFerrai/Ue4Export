@@ -15,6 +15,7 @@
 using CUE4Parse.Encryption.Aes;
 using CUE4Parse.FileProvider;
 using CUE4Parse.FileProvider.Vfs;
+using CUE4Parse.MappingsProvider;
 using CUE4Parse.UE4.AssetRegistry;
 using CUE4Parse.UE4.Assets.Exports;
 using CUE4Parse.UE4.Assets.Exports.Texture;
@@ -38,9 +39,8 @@ namespace Ue4Export
 	{
 		private static readonly HashSet<string> sExtensionsToIgnore;
 
-		private readonly string mGameDir;
-		private readonly string mAssetListPath;
-		private readonly string mOutDir;
+		private readonly Options mOptions;
+
 		private readonly FAesKey mAesKey;
 
 		private readonly Logger? mLogger;
@@ -60,9 +60,7 @@ namespace Ue4Export
 
 		public Exporter(Options options, Logger? logger)
 		{
-			mGameDir = options.PaksDirectory;
-			mAssetListPath = options.AssetListFile;
-			mOutDir = options.OutputDirectory;
+			mOptions = options;
 			mAesKey = options.EncryptionKey is null ? new(new byte[32]) : new(options.EncryptionKey);
 			mLogger = logger;
 
@@ -76,9 +74,17 @@ namespace Ue4Export
 		{
 			bool success = true;
 
-			using (var provider = new DefaultFileProvider(mGameDir, SearchOption.TopDirectoryOnly))
+			using (var provider = new DefaultFileProvider(mOptions.AssetsDirectory, mOptions.AssetSearchOption))
 			{
+				provider.Versions.Game = mOptions.EngineVersion;
+				provider.Versions.Ver = mOptions.EngineVersion.GetVersion();
+
 				provider.Initialize();
+
+				if (mOptions.MappingsPath is not null)
+				{
+					provider.MappingsContainer = new FileUsmapTypeMappingsProvider(mOptions.MappingsPath);
+				}
 
 				foreach (var vfsReader in provider.UnloadedVfs)
 				{
@@ -90,7 +96,7 @@ namespace Ue4Export
 				ExportFormats formats = ExportFormats.Auto;
 				mLogger?.Log(LogLevel.Important, "Export format is now [Auto]");
 
-				foreach (string line in File.ReadAllLines(mAssetListPath))
+				foreach (string line in File.ReadAllLines(mOptions.AssetListFile))
 				{
 					if (string.IsNullOrWhiteSpace(line)) continue;
 
@@ -321,7 +327,7 @@ namespace Ue4Export
 					{
 						byte[] data = provider.Files[assetPath].Read();
 
-						string outPath = Path.Combine(mOutDir, assetPath);
+						string outPath = Path.Combine(mOptions.OutputDirectory, assetPath);
 						Directory.CreateDirectory(Path.GetDirectoryName(outPath)!);
 						File.WriteAllBytes(outPath, data);
 
@@ -338,7 +344,7 @@ namespace Ue4Export
 						var raw = provider.SavePackage(assetPath[..extPos]);
 						foreach (var pair in raw)
 						{
-							string outPath = Path.Combine(mOutDir, pair.Key);
+							string outPath = Path.Combine(mOptions.OutputDirectory, pair.Key);
 							Directory.CreateDirectory(Path.GetDirectoryName(outPath)!);
 							File.WriteAllBytes(outPath, pair.Value);
 						}
@@ -422,11 +428,11 @@ namespace Ue4Export
 			string outPath;
 			if (changeExtenstionToJson)
 			{
-				outPath = Path.Combine(mOutDir, Path.ChangeExtension(assetPath, ".json"));
+				outPath = Path.Combine(mOptions.OutputDirectory, Path.ChangeExtension(assetPath, ".json"));
 			}
 			else
 			{
-				outPath = Path.Combine(mOutDir, assetPath);
+				outPath = Path.Combine(mOptions.OutputDirectory, assetPath);
 			}
 
 			Directory.CreateDirectory(Path.GetDirectoryName(outPath)!);
@@ -483,7 +489,7 @@ namespace Ue4Export
 
 							mLogger?.Log(LogLevel.Information, $"  Saving texture {texture.Name}");
 
-							string outPath = Path.Combine(mOutDir, $"{ConvertAssetPath(texture.GetPathName())}.png");
+							string outPath = Path.Combine(mOptions.OutputDirectory, $"{ConvertAssetPath(texture.GetPathName())}.png");
 							success &= WriteTexture(bitmap, SKEncodedImageFormat.Png, outPath);
 						}
 
@@ -507,7 +513,7 @@ namespace Ue4Export
 					{
 						byte[] data = provider.SaveAsset(assetPath);
 
-						string outPath = Path.Combine(mOutDir, assetPath);
+						string outPath = Path.Combine(mOptions.OutputDirectory, assetPath);
 
 						SKEncodedImageFormat format;
 						switch (ext)

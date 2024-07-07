@@ -6,11 +6,16 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <PlatformTarget>x64</PlatformTarget>
-    <Authors>Crystal Ferrai</Authors>
-    <Copyright>Copyright © 2022 Crystal Ferrai</Copyright>
-    <AssemblyVersion>3.0.1.0</AssemblyVersion>
-    <FileVersion>3.0.1.0</FileVersion>
     <Platforms>AnyCPU;x64</Platforms>
+	<ProductName>Ue4Export</ProductName>
+	<Description>Ue4Export</Description>
+    <Authors>Crystal Ferrai</Authors>
+    <Copyright>Copyright © 2024 Crystal Ferrai</Copyright>
+	<Version>4.0.0.0</Version>
+	<ProductVersion>$(Version)</ProductVersion>
+    <AssemblyVersion>$(Version)</AssemblyVersion>
+    <FileVersion>$(Version)</FileVersion>
+	<InformationalVersion>$(Version)</InformationalVersion>
   </PropertyGroup>
 
   <ItemGroup>
