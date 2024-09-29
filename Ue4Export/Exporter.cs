@@ -360,6 +360,18 @@ namespace Ue4Export
 			string? text = null;
 			bool changeExtenstionToJson = true;
 
+			string outPath;
+			if (changeExtenstionToJson)
+			{
+				outPath = Path.Combine(mOptions.OutputDirectory, Path.ChangeExtension(assetPath, ".json"));
+			}
+			else
+			{
+				outPath = Path.Combine(mOptions.OutputDirectory, assetPath);
+			}
+
+			Directory.CreateDirectory(Path.GetDirectoryName(outPath)!);
+
 			switch (ext)
 			{
 				case "":
@@ -367,8 +379,15 @@ namespace Ue4Export
 				case "umap":
 					{
 						var exports = provider.LoadAllObjects(assetPath);
-						text = JsonConvert.SerializeObject(exports, mJsonSettings);
-						break;
+
+						JsonSerializer serializer = new();
+						serializer.Formatting = mJsonSettings.Formatting;
+
+						using StreamWriter stream = new(outPath, false, Encoding.UTF8);
+						using JsonWriter writer = new JsonTextWriter(stream);
+						serializer.Serialize(writer, exports);
+
+						return true;
 					}
 				case "ini":
 				case "txt":
@@ -425,17 +444,6 @@ namespace Ue4Export
 					return isBulkExport;
 			}
 
-			string outPath;
-			if (changeExtenstionToJson)
-			{
-				outPath = Path.Combine(mOptions.OutputDirectory, Path.ChangeExtension(assetPath, ".json"));
-			}
-			else
-			{
-				outPath = Path.Combine(mOptions.OutputDirectory, assetPath);
-			}
-
-			Directory.CreateDirectory(Path.GetDirectoryName(outPath)!);
 			File.WriteAllText(outPath, text);
 
 			return true;
