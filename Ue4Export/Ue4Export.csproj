@@ -11,7 +11,7 @@
 	<Description>Ue4Export</Description>
     <Authors>Crystal Ferrai</Authors>
     <Copyright>Copyright © 2024 Crystal Ferrai</Copyright>
-	<Version>4.0.0.0</Version>
+	<Version>4.1.0.0</Version>
 	<ProductVersion>$(Version)</ProductVersion>
     <AssemblyVersion>$(Version)</AssemblyVersion>
     <FileVersion>$(Version)</FileVersion>
