@@ -360,17 +360,8 @@ namespace Ue4Export
 		{
 			string ext = GetTrimmedExtension(assetPath);
 			string? text = null;
-			bool changeExtenstionToJson = true;
 
-			string outPath;
-			if (changeExtenstionToJson)
-			{
-				outPath = Path.Combine(mOptions.OutputDirectory, Path.ChangeExtension(assetPath, ".json"));
-			}
-			else
-			{
-				outPath = Path.Combine(mOptions.OutputDirectory, assetPath);
-			}
+			string outPath = Path.Combine(mOptions.OutputDirectory, Path.ChangeExtension(assetPath, ".json"));
 
 			Directory.CreateDirectory(Path.GetDirectoryName(outPath)!);
 
@@ -411,7 +402,7 @@ namespace Ue4Export
 				case "archive":
 				case "manifest":
 					text = Encoding.UTF8.GetString(provider.Files[assetPath].Read());
-					changeExtenstionToJson = false;
+					outPath = Path.Combine(mOptions.OutputDirectory, assetPath);
 					break;
 				case "locmeta":
 					text = SerializeObject<FTextLocalizationMetaDataResource>(provider, assetPath);
