@@ -26,6 +26,7 @@ using CUE4Parse.UE4.Shaders;
 using CUE4Parse.UE4.Versions;
 using CUE4Parse.UE4.Wwise;
 using CUE4Parse_Conversion.Textures;
+using CUE4Parse_Conversion.Textures.BC;
 using Newtonsoft.Json;
 using SkiaSharp;
 using System.Text;
@@ -72,6 +73,15 @@ namespace Ue4Export
 
 		public bool Export()
 		{
+			var detexPath = Path.Combine(AppContext.BaseDirectory, DetexHelper.DLL_NAME);
+			if (File.Exists(detexPath))
+			{
+				mLogger?.Log(LogLevel.Important, $"Initializing detex at {detexPath}.");
+				DetexHelper.Initialize(detexPath);
+			}
+			else
+				mLogger?.Log(LogLevel.Important, $"Detex DLL not found, texture conversion is unavailable.");
+
 			bool success = true;
 
 			using (var provider = new DefaultFileProvider(new DirectoryInfo(mOptions.AssetsDirectory), mOptions.AssetSearchOption, null, null))
@@ -330,6 +340,7 @@ namespace Ue4Export
 						byte[] data = provider.Files[assetPath].Read();
 
 						string outPath = Path.Combine(mOptions.OutputDirectory, assetPath);
+						if (mOptions.SkipExisting && File.Exists(outPath)) break;
 						Directory.CreateDirectory(Path.GetDirectoryName(outPath)!);
 						File.WriteAllBytes(outPath, data);
 
@@ -347,6 +358,7 @@ namespace Ue4Export
 						foreach (var pair in raw)
 						{
 							string outPath = Path.Combine(mOptions.OutputDirectory, pair.Key);
+							if (mOptions.SkipExisting && File.Exists(outPath)) continue;
 							Directory.CreateDirectory(Path.GetDirectoryName(outPath)!);
 							File.WriteAllBytes(outPath, pair.Value);
 						}
@@ -372,6 +384,7 @@ namespace Ue4Export
 				outPath = Path.Combine(mOptions.OutputDirectory, assetPath);
 			}
 
+			if (mOptions.SkipExisting && File.Exists(outPath)) return true;
 			Directory.CreateDirectory(Path.GetDirectoryName(outPath)!);
 
 			switch (ext)
@@ -499,7 +512,8 @@ namespace Ue4Export
 
 							mLogger?.Log(LogLevel.Information, $"  Saving texture {texture.Name}");
 
-							string outPath = Path.Combine(mOptions.OutputDirectory, $"{ConvertAssetPath(texture.GetPathName())}.png");
+							string outPath = Path.Combine(mOptions.OutputDirectory, Path.ChangeExtension(assetPath, ".png"));
+							if (mOptions.SkipExisting && File.Exists(outPath)) return true;
 							success &= WriteTexture(bitmap, SKEncodedImageFormat.Png, outPath);
 						}
 
@@ -524,6 +538,7 @@ namespace Ue4Export
 						byte[] data = provider.SaveAsset(assetPath);
 
 						string outPath = Path.Combine(mOptions.OutputDirectory, assetPath);
+						if (mOptions.SkipExisting && File.Exists(outPath)) return true;
 
 						SKEncodedImageFormat format;
 						switch (ext)

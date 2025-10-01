@@ -229,6 +229,8 @@ Options
 
   --silent           No logging unless an error occurs.
 
+  --skip-existing    Skip existing files.
+
 Game engine versions
   Pass in the engine version that best matches the game being dumped. If the game has a
   specialized version, pass that in. Otherwise, pass in the engine version the game was

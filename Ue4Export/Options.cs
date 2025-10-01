@@ -73,6 +73,11 @@ namespace Ue4Export
 		/// </summary>
 		public bool IsSilent { get; set; }
 
+		/// <summary>
+		/// Whether to skip existing files
+		/// </summary>
+		public bool SkipExisting { get; set; }
+
 		private Options()
 		{
 			AssetsDirectory = null!;
@@ -83,6 +88,7 @@ namespace Ue4Export
 			AssetSearchOption = SearchOption.AllDirectories;
 			IsQuiet = false;
 			IsSilent = false;
+			SkipExisting = false;
 		}
 
 		/// <summary>
@@ -149,6 +155,9 @@ namespace Ue4Export
 							break;
 						case "silent":
 							instance.IsSilent = true;
+							break;
+						case "skip-existing":
+							instance.SkipExisting = true;
 							break;
 						default:
 							logger.LogError($"Unrecognized argument '{args[i]}'");
@@ -303,6 +312,7 @@ namespace Ue4Export
 			logger.Log(logLevel, $"{indent}  Mix output        {MixOutput}");
 			logger.Log(logLevel, $"{indent}  Mappings path     {MappingsPath??"[None]"}");
 			logger.Log(logLevel, $"{indent}  AES key           {(EncryptionKey is null ? "No" : "Yes")}");
+			logger.Log(logLevel, $"{indent}  Skip existing     {SkipExisting}");
 		}
 	}
 }
