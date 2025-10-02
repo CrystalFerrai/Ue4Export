@@ -74,14 +74,14 @@ namespace Ue4Export
 		public bool Export()
 		{
 			var detexPath = Path.Combine(AppContext.BaseDirectory, DetexHelper.DLL_NAME);
-			if (File.Exists(detexPath))
+
+			if (!File.Exists(detexPath))
 			{
 				mLogger?.Log(LogLevel.Important, $"Initializing detex at {detexPath}.");
-				DetexHelper.Initialize(detexPath);
+				DetexHelper.LoadDll(detexPath);
 			}
-			else
-				mLogger?.Log(LogLevel.Important, $"Detex DLL not found, texture conversion is unavailable.");
 
+			DetexHelper.Initialize(detexPath);
 			bool success = true;
 
 			using (var provider = new DefaultFileProvider(new DirectoryInfo(mOptions.AssetsDirectory), mOptions.AssetSearchOption, null, null))
