@@ -11,7 +11,7 @@
 	<Description>Ue4Export</Description>
     <Authors>Crystal Ferrai</Authors>
     <Copyright>Copyright © 2024 Crystal Ferrai</Copyright>
-	<Version>4.1.1.0</Version>
+	<Version>4.2.0.0</Version>
 	<ProductVersion>$(Version)</ProductVersion>
     <AssemblyVersion>$(Version)</AssemblyVersion>
     <FileVersion>$(Version)</FileVersion>
@@ -31,16 +31,22 @@
   <ItemGroup>
 	<UpToDateCheckInput Include="$(SolutionDir)lib\oo2core_9_win64.dll" />
 	<UpToDateCheckInput Include="$(SolutionDir)lib\zlib-ng2.dll" />
+	<UpToDateCheckInput Include="$(SolutionDir)CUE4Parse\CUE4Parse-Conversion\Resources\Detex.dll" />
+	<UpToDateCheckInput Include="$(SolutionDir)CUE4Parse\CUE4Parse-Conversion\Resources\tegra_swizzle_x64.dll" />
   </ItemGroup>
 
   <Target Name="CopyLibs" AfterTargets="PostBuildEvent">
     <Copy SourceFiles="$(SolutionDir)lib\oo2core_9_win64.dll" DestinationFolder="$(TargetDir)" />
     <Copy SourceFiles="$(SolutionDir)lib\zlib-ng2.dll" DestinationFolder="$(TargetDir)" />
+	<Copy SourceFiles="$(SolutionDir)CUE4Parse\CUE4Parse-Conversion\Resources\Detex.dll" DestinationFolder="$(TargetDir)" />
+	<Copy SourceFiles="$(SolutionDir)CUE4Parse\CUE4Parse-Conversion\Resources\tegra_swizzle_x64.dll" DestinationFolder="$(TargetDir)" />
   </Target>
 
   <Target Name="PublishCopyLibs" AfterTargets="CopyFilesToOutputDirectory">
     <Copy SourceFiles="$(SolutionDir)lib\oo2core_9_win64.dll" DestinationFolder="$(PublishDir)" />
     <Copy SourceFiles="$(SolutionDir)lib\zlib-ng2.dll" DestinationFolder="$(PublishDir)" />
+	<Copy SourceFiles="$(SolutionDir)CUE4Parse\CUE4Parse-Conversion\Resources\Detex.dll" DestinationFolder="$(PublishDir)" />
+	<Copy SourceFiles="$(SolutionDir)CUE4Parse\CUE4Parse-Conversion\Resources\tegra_swizzle_x64.dll" DestinationFolder="$(PublishDir)" />
   </Target>
 
 </Project>

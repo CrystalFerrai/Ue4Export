@@ -330,6 +330,8 @@ namespace Ue4Export
 						byte[] data = provider.Files[assetPath].Read();
 
 						string outPath = Path.Combine(mOptions.OutputDirectory, assetPath);
+						if (mOptions.SkipExisting && File.Exists(outPath)) break;
+
 						Directory.CreateDirectory(Path.GetDirectoryName(outPath)!);
 						File.WriteAllBytes(outPath, data);
 
@@ -347,6 +349,8 @@ namespace Ue4Export
 						foreach (var pair in raw)
 						{
 							string outPath = Path.Combine(mOptions.OutputDirectory, pair.Key);
+							if (mOptions.SkipExisting && File.Exists(outPath)) break;
+
 							Directory.CreateDirectory(Path.GetDirectoryName(outPath)!);
 							File.WriteAllBytes(outPath, pair.Value);
 						}
@@ -371,6 +375,8 @@ namespace Ue4Export
 				case "uasset":
 				case "umap":
 					{
+						if (mOptions.SkipExisting && File.Exists(outPath)) return true;
+
 						IEnumerable<UObject> exports = provider.LoadPackage(assetPath).GetExports();
 
 						JsonSerializer serializer = new();
@@ -403,25 +409,38 @@ namespace Ue4Export
 				case "manifest":
 					text = Encoding.UTF8.GetString(provider.Files[assetPath].Read());
 					outPath = Path.Combine(mOptions.OutputDirectory, assetPath);
+					if (mOptions.SkipExisting && File.Exists(outPath)) return true;
 					break;
 				case "locmeta":
+					if (mOptions.SkipExisting && File.Exists(outPath)) return true;
+
 					text = SerializeObject<FTextLocalizationMetaDataResource>(provider, assetPath);
 					break;
 				case "locres":
+					if (mOptions.SkipExisting && File.Exists(outPath)) return true;
+
 					text = SerializeObject<FTextLocalizationResource>(provider, assetPath);
 					break;
 				case "bin" when assetPath.Contains("AssetRegistry"):
+					if (mOptions.SkipExisting && File.Exists(outPath)) return true;
+
 					text = SerializeObject<FAssetRegistryState>(provider, assetPath);
 					break;
 				case "bnk":
 				case "pck":
+					if (mOptions.SkipExisting && File.Exists(outPath)) return true;
+
 					text = SerializeObject<WwiseReader>(provider, assetPath);
 					break;
 				case "udic":
+					if (mOptions.SkipExisting && File.Exists(outPath)) return true;
+
 					text = SerializeObject<FOodleDictionaryArchive>(provider, assetPath);
 					break;
 				case "ushaderbytecode":
 				case "ushadercode":
+					if (mOptions.SkipExisting && File.Exists(outPath)) return true;
+
 					text = SerializeObject<FShaderCodeArchive>(provider, assetPath);
 					break;
 				case "png":
@@ -491,6 +510,8 @@ namespace Ue4Export
 							mLogger?.Log(LogLevel.Information, $"  Saving texture {texture.Name}");
 
 							string outPath = Path.Combine(mOptions.OutputDirectory, $"{ConvertAssetPath(texture.GetPathName())}.png");
+							if (mOptions.SkipExisting && File.Exists(outPath)) continue;
+
 							success &= WriteTexture(bitmap, SKEncodedImageFormat.Png, outPath);
 						}
 
@@ -515,6 +536,8 @@ namespace Ue4Export
 						byte[] data = provider.SaveAsset(assetPath);
 
 						string outPath = Path.Combine(mOptions.OutputDirectory, assetPath);
+
+						if (mOptions.SkipExisting && File.Exists(outPath)) return true;
 
 						SKEncodedImageFormat format;
 						switch (ext)
@@ -591,6 +614,12 @@ namespace Ue4Export
 			if (dir is null)
 			{
 				return file;
+			}
+			
+			// Old versions of UE4 include "Game" at the start of the path which causes issues
+			if (dir.StartsWith("Game/", StringComparison.InvariantCultureIgnoreCase))
+			{
+				dir = dir.Substring(5);
 			}
 
 			return Path.Combine(dir, file);

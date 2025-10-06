@@ -13,6 +13,7 @@
 // limitations under the License.
 
 using CUE4Parse.Compression;
+using CUE4Parse_Conversion.Textures.BC;
 using System.Reflection;
 
 namespace Ue4Export
@@ -60,7 +61,7 @@ namespace Ue4Export
 				return OnExit(1);
 			}
 
-			if (!options.MixOutput)
+			if (!options.MixOutput && !options.SkipExisting)
 			{
 				try
 				{
@@ -80,6 +81,7 @@ namespace Ue4Export
 			string assemblyDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!;
 			ZlibHelper.Initialize(Path.Combine(assemblyDir, ZlibHelper.DLL_NAME));
 			OodleHelper.Initialize(Path.Combine(assemblyDir, OodleHelper.OODLE_DLL_NAME));
+			DetexHelper.Initialize(Path.Combine(assemblyDir, DetexHelper.DLL_NAME));
 
 			logger.Log(LogLevel.Important, "Exporting assets...");
 			Exporter exporter = new Exporter(options, logger);

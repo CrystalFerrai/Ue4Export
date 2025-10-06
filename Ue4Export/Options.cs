@@ -49,6 +49,11 @@ namespace Ue4Export
 		public bool MixOutput { get; set; }
 
 		/// <summary>
+		/// Whether to skip exporting assets where a matching output file already exists
+		/// </summary>
+		public bool SkipExisting { get; set; }
+
+		/// <summary>
 		/// Path to a mappings file for the game. Needed for UE5 games
 		/// </summary>
 		public string? MappingsPath { get; set; }
@@ -79,6 +84,7 @@ namespace Ue4Export
 			OutputDirectory = null!;
 			AssetListFile = null!;
 			MixOutput = false;
+			SkipExisting = false;
 			EncryptionKey = null;
 			AssetSearchOption = SearchOption.AllDirectories;
 			IsQuiet = false;
@@ -114,6 +120,9 @@ namespace Ue4Export
 					{
 						case "mix-output":
 							instance.MixOutput = true;
+							break;
+						case "skip-existing":
+							instance.SkipExisting = true;
 							break;
 						case "mappings":
 							if (i < args.Length - 1 && !args[i + 1].StartsWith("--"))
@@ -247,6 +256,9 @@ namespace Ue4Export
 			logger.LogEmptyLine(logLevel);
 			logger.Log(logLevel, $"{indent}  --mix-output       Do not clear the contents of the output directory before exporting.");
 			logger.LogEmptyLine(logLevel);
+			logger.Log(logLevel, $"{indent}  --skip-existing    Skip exporting assets where a matching output file already exists.");
+			logger.Log(logLevel, $"{indent}                     Implies --mix-output");
+			logger.LogEmptyLine(logLevel);
 			logger.Log(logLevel, $"{indent}  --mappings [path]  The path to a usmap file for the game. This is necessary if the game contains");
 			logger.Log(logLevel, $"{indent}                     unversioned data, such as a UE5 game. See readme for more information.");
 			logger.LogEmptyLine(logLevel);
@@ -300,7 +312,8 @@ namespace Ue4Export
 			logger.Log(logLevel, $"{indent}  Engine version    {EngineVersion.ToString()[5..]}");
 			logger.Log(logLevel, $"{indent}  Asset list file   {AssetListFile}");
 			logger.Log(logLevel, $"{indent}  Output directory  {OutputDirectory}");
-			logger.Log(logLevel, $"{indent}  Mix output        {MixOutput}");
+			logger.Log(logLevel, $"{indent}  Mix output        {MixOutput || SkipExisting}");
+			logger.Log(logLevel, $"{indent}  Skip existing     {SkipExisting}");
 			logger.Log(logLevel, $"{indent}  Mappings path     {MappingsPath ?? "[None]"}");
 			logger.Log(logLevel, $"{indent}  AES key           {(EncryptionKey is null ? "No" : "Yes")}");
 		}

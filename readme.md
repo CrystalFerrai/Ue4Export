@@ -217,6 +217,9 @@ Options
 
   --mix-output       Do not clear the contents of the output directory before exporting.
 
+  --skip-existing    Skip exporting assets where a matching output file already exists.
+                     Implies --mix-output
+
   --mappings [path]  The path to a usmap file for the game. This is necessary if the game contains
                      unversioned data, such as a UE5 game. See readme for more information.
 
