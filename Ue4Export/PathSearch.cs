@@ -24,7 +24,7 @@ namespace Ue4Export
 		public static bool IsMatch(string path, string pattern)
 		{
 			// Supports wildcards "*" (0 or more characters) and "?" (1 character)
-            return FileSystemName.MatchesSimpleExpression(pattern, path);
+			return FileSystemName.MatchesSimpleExpression(pattern, path);
 		}
 
 		public static IEnumerable<string> Filter(IEnumerable<string> paths, string pattern)
@@ -34,5 +34,5 @@ namespace Ue4Export
 				if (IsMatch(path, pattern)) yield return path;
 			}
 		}
-    }
+	}
 }

@@ -301,7 +301,7 @@ namespace Ue4Export
 			logger.Log(logLevel, $"{indent}  Asset list file   {AssetListFile}");
 			logger.Log(logLevel, $"{indent}  Output directory  {OutputDirectory}");
 			logger.Log(logLevel, $"{indent}  Mix output        {MixOutput}");
-			logger.Log(logLevel, $"{indent}  Mappings path     {MappingsPath??"[None]"}");
+			logger.Log(logLevel, $"{indent}  Mappings path     {MappingsPath ?? "[None]"}");
 			logger.Log(logLevel, $"{indent}  AES key           {(EncryptionKey is null ? "No" : "Yes")}");
 		}
 	}

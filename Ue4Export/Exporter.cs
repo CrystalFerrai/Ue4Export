@@ -146,13 +146,13 @@ namespace Ue4Export
 
 			bool checkIsAuto()
 			{
-                if (formats == ExportFormats.Auto)
+				if (formats == ExportFormats.Auto)
 				{
 					mLogger?.Log(LogLevel.Warning, "[Auto] format cannot be combined with other formats in the same group. Other formats will be ignored.");
 					return true;
 				}
 				return false;
-            }
+			}
 
 			string[] headers = input.Split(',');
 			foreach (string h in headers)
