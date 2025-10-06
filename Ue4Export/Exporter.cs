@@ -93,7 +93,16 @@ namespace Ue4Export
 
 				provider.PostMount();
 
-				provider.ChangeCulture(provider.GetLanguageCode(ELanguage.English));
+				try
+				{
+					provider.ChangeCulture(provider.GetLanguageCode(ELanguage.English));
+				}
+				catch (Exception)
+				{
+					mLogger?.LogEmptyLine(LogLevel.Warning);
+					mLogger?.Log(LogLevel.Warning, "Unable to set culture to 'en'. This most likely means either the game data is missing standard ini files, or there is no localization present for the requested culture. Exported text properties will not be localized.");
+					mLogger?.LogEmptyLine(LogLevel.Warning);
+				}
 
 				ExportFormats formats = ExportFormats.Auto;
 				mLogger?.Log(LogLevel.Important, "Export format is now [Auto]");
