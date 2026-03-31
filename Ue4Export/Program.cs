@@ -80,7 +80,7 @@ namespace Ue4Export
 
 			string assemblyDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!;
 			ZlibHelper.Initialize(Path.Combine(assemblyDir, ZlibHelper.DLL_NAME));
-			OodleHelper.Initialize(Path.Combine(assemblyDir, OodleHelper.OODLE_DLL_NAME));
+			OodleHelper.Initialize(Path.Combine(assemblyDir, OodleHelper.OODLE_NAME_CURRENT));
 			DetexHelper.Initialize(Path.Combine(assemblyDir, DetexHelper.DLL_NAME));
 
 			logger.Log(LogLevel.Important, "Exporting assets...");
